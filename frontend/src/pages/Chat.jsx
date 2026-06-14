@@ -27,7 +27,7 @@ export default function Chat() {
     strategyApi
       .indicators()
       .then((list) => setStudies(indicatorsToStudies(list.filter((i) => i.is_active))))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -104,9 +104,8 @@ export default function Chat() {
             <div
               key={c.id}
               onClick={() => openConversation(c.id)}
-              className={`group flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition ${
-                c.id === activeId ? "bg-ink-600" : "hover:bg-ink-700"
-              }`}
+              className={`group flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition ${c.id === activeId ? "bg-ink-600" : "hover:bg-ink-700"
+                }`}
             >
               <span className="text-sm text-mist-100 truncate flex-1">{c.title}</span>
               <button
@@ -305,7 +304,7 @@ function RecommendationCard({ rec, studies }) {
         </div>
       </div>
 
-      <div className="px-4 pt-3"><SignalChart symbol={tvSymbol} studies={studies} height={260} /></div>
+      <div className="px-4 pt-3" style={{ height: '53%' }}><SignalChart symbol={tvSymbol} studies={studies} height={260} /></div>
 
       {usedInds.length > 0 && (
         <div className="px-4 pt-3 flex items-center gap-1.5 flex-wrap">
@@ -348,4 +347,4 @@ function Level({ label, value, tone }) {
   );
 }
 
-function ListIcon() { return (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>); }
+function ListIcon() { return (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>); }

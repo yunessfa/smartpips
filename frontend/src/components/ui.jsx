@@ -7,7 +7,7 @@ export function Panel({ title, action, children, className = "" }) {
           {action}
         </header>
       )}
-      <div className="p-4">{children}</div>
+      <div className="p-4" style={{ height: '80%' }}>{children}</div>
     </section>
   );
 }
