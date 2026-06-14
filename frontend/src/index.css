@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+body {
+  margin: 0;
+  background: #0B0E14;
+  background-image:
+    radial-gradient(900px 500px at 100% -5%, rgba(224, 168, 46, 0.06), transparent 60%),
+    radial-gradient(700px 500px at -10% 110%, rgba(91, 141, 239, 0.05), transparent 55%);
+  background-attachment: fixed;
+  color: #E6E9F0;
+  font-family: "Inter", "Vazirmatn", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Persian uses Vazirmatn across the app */
+html.font-fa, html.font-fa body { font-family: "Vazirmatn", "Inter", system-ui, sans-serif; }
+
+/* Latin numerals stay monospaced & tabular even inside RTL text */
+.tnum {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #222A3A; border-radius: 999px; border: 2px solid #0B0E14;
+}
+::-webkit-scrollbar-thumb:hover { background: #2c3650; }
+
+@keyframes blink { 50% { opacity: 0.25; } }
+.live-dot { animation: blink 1.6s infinite; }
+
+/* gentle entrance for chat messages */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise 0.25s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

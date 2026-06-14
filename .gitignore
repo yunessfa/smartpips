@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.sqlite3
+backend/staticfiles/
+
+# Secrets / env (NEVER commit real keys)
+.env
+*/.env
+backend/.env
+!**/.env.example
+!**/.env.production.example
+
+# Node / frontend build
+node_modules/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
