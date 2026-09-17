@@ -254,7 +254,27 @@ def fetch_candles(symbol: str, timeframe: str = "5m", limit: int = 200):
         lb = _lbank_metal_candles(symbol, timeframe, limit)
         if lb:
             return _cache_put(key, lb[-limit:], timeframe)
-        log.warning("no LBank candles for %s %s — engine will sit out",
+
+        # LBank returned nothing (WAF 403, contract delisted, endpoint moved).
+        # Sitting out indefinitely means "no gold signals, ever", which is what
+        # the user actually experienced. Unless METALS_STRICT_SOURCE=1 we fall
+        # back to the old chain: broker bridge first, then Twelve Data. The
+        # fallback is logged loudly because those bars come from a different
+        # book than LBank's, so stops measured on them carry a small basis risk.
+        strict = str(os.getenv("METALS_STRICT_SOURCE", "")).lower() in ("1", "true", "yes")
+        if not strict:
+            mt5 = _mt5_candles(symbol, timeframe)
+            if mt5:
+                log.warning("metals fallback: %s %s bars from the MT5 bridge "
+                            "(LBank returned nothing)", symbol, timeframe)
+                return _cache_put(key, mt5[-limit:], timeframe)
+            td = _twelvedata_candles(symbol, timeframe, limit)
+            if td:
+                log.warning("metals fallback: %s %s bars from Twelve Data "
+                            "(LBank returned nothing)", symbol, timeframe)
+                return _cache_put(key, td[-limit:], timeframe)
+
+        log.warning("no metal candles at all for %s %s — engine will sit out",
                     symbol, timeframe)
         return _cache_put(key, [], "1m")
 

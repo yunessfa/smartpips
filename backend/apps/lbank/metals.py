@@ -41,6 +41,26 @@ _PUB = "/cfd/openApi/v1/pub"
 _PRODUCT_GROUP = "SwapU"          # USDT-margined perpetual
 _TIMEOUT = 8
 
+# LBank's perpetual host sits behind a WAF that answers 403 Forbidden to bare
+# requests coming from a datacentre IP with no browser headers. That is exactly
+# what silently killed the gold feed: every /pub call returned 403, so
+# resolve_symbol() found no contract, fetch_candles() returned None, and the
+# engine sat out forever. Sending ordinary browser headers is what the probe
+# showed to be the difference.
+_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/125.0.0.0 Safari/537.36"),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Origin": "https://www.lbank.com",
+    "Referer": "https://www.lbank.com/",
+}
+
+# Last transport error per path. Read by `manage.py metals_probe` so the
+# operator sees WHY there is no gold data instead of just "no data".
+LAST_ERRORS: dict = {}
+
 # Our internal symbol -> the tokens we accept in an LBank contract symbol.
 # Matching is substring-based and case-insensitive, so "GOLDUSDT",
 # "XAUUSDT" and "GOLD(XAU)USDT" all resolve for XAUUSD.
@@ -54,18 +74,32 @@ SUPPORTED = frozenset(_MATCH)
 # Cache keys / TTLs. Symbol resolution barely ever changes, prices must not be
 # stale, and the working kline endpoint is worth remembering for a whole day.
 _SYMBOL_TTL = 6 * 60 * 60
+# A negative result must NOT stick for 6 hours: when LBank (or its WAF)
+# recovers we want the next poll to notice, not the next working day.
+_SYMBOL_MISS_TTL = 120
 _PRICE_TTL = 10
 _ENDPOINT_TTL = 24 * 60 * 60
 _CANDLE_TTL = {"1m": 45, "5m": 90, "15m": 180, "1h": 600, "4h": 1800}
 
 
 def _get(path, params):
-    """GET an LBank public endpoint. Returns parsed JSON or None. Never raises."""
+    """GET an LBank public endpoint. Returns parsed JSON or None. Never raises.
+
+    Records the failure reason in LAST_ERRORS so a 403 (WAF / geo block) can be
+    told apart from a timeout or a delisted contract.
+    """
     try:
-        r = requests.get(f"{_BASE}{path}", params=params, timeout=_TIMEOUT)
-        r.raise_for_status()
+        r = requests.get(f"{_BASE}{path}", params=params,
+                         headers=_HEADERS, timeout=_TIMEOUT)
+        if r.status_code >= 400:
+            LAST_ERRORS[path] = f"HTTP {r.status_code}"
+            log.warning("lbank GET %s -> HTTP %s (%s)", path, r.status_code,
+                        (r.text or "")[:160])
+            return None
+        LAST_ERRORS.pop(path, None)
         return r.json()
     except (requests.RequestException, ValueError) as exc:
+        LAST_ERRORS[path] = str(exc)
         log.warning("lbank GET %s failed: %s", path, exc)
         return None
 
@@ -126,7 +160,7 @@ def resolve_symbol(symbol):
     else:
         log.warning("lbank metals: %s not listed on LBank (%d instruments seen)",
                     symbol, len(rows))
-    cache.set(key, found, _SYMBOL_TTL)
+    cache.set(key, found, _SYMBOL_TTL if found else _SYMBOL_MISS_TTL)
     return found or None
 
 

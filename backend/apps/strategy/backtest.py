@@ -100,11 +100,14 @@ def backtest(symbol, candles, warmup=60, max_hold=40, tick_mode=False):
             # close at last seen price
             last_close = candles[min(i + max_hold, len(candles) - 1)]["close"]
             outcome = (last_close - entry) if direction == "buy" else (entry - last_close)
-        # subtract round-trip taker fee (entry + exit), expressed in price units
+        # Round-trip taker fee (entry + exit) in price units. As of 2026-09 it
+        # is REPORTED, not subtracted: the result shows the raw edge, exactly
+        # like the live/demo PnL now does, and the fee is summarised separately
+        # so it stays visible instead of silently eating the numbers.
         exit_px = entry + outcome if direction == "buy" else entry - outcome
         fee = (entry + exit_px) * FEE_RATE
-        outcome -= fee
-        trades.append({"r": outcome / risk if risk else 0, "pnl": outcome})
+        trades.append({"r": outcome / risk if risk else 0, "pnl": outcome,
+                       "fee": fee, "fee_r": (fee / risk if risk else 0)})
         i += 2  # step past the trade to avoid overlapping entries
 
     if not trades:
@@ -136,4 +139,7 @@ def backtest(symbol, candles, warmup=60, max_hold=40, tick_mode=False):
         "total_r": round(sum(rs), 2),
         "wins": len(wins),
         "losses": len(losses),
+        # Estimate only — already NOT deducted from any number above.
+        "est_fee_r": round(sum(t["fee_r"] for t in trades), 2),
+        "fees_deducted": False,
     }

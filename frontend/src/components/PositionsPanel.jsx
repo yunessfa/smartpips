@@ -75,32 +75,52 @@ export function PositionsPanel({ balance, defaultInitial = null, compact = false
           if (r && r.ok && Number.isFinite(r.price)) out[sym.toUpperCase()] = r.price;
         } catch { /* ignore */ }
       }));
-      if (!stop) setPolled(out);
+      // MERGE instead of replacing: a single failed request used to wipe every
+      // known price, which is what made the P&L column fall back to "—".
+      if (!stop) setPolled((prev) => ({ ...prev, ...out }));
     }
     tick();
-    const id = setInterval(tick, 4000);
+    const id = setInterval(tick, 3000);
     return () => { stop = true; clearInterval(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openKey]);
 
-  async function load() {
-    setLoading(true);
+  // `silent` = background refresh: no spinner, no flicker, table stays put.
+  async function load(silent = false) {
+    if (!silent) setLoading(true);
     try {
       try { await tradesApi.autoClose(); } catch { /* ignore */ }
       const list = await tradesApi.list();
-      setTrades(list);
+      setTrades(Array.isArray(list) ? list : list?.results || []);
       try {
         const res = await tradesApi.exitAdvice();
         const map = {};
         (res.advice || []).forEach((a) => { map[a.trade_id] = a; });
         setExitAdvice(map);
       } catch { /* ignore */ }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch { /* ignore */ } finally { if (!silent) setLoading(false); }
   }
-  // reloads on mount and whenever refreshKey bumps (a trade logged elsewhere
-  // on the page), so newly logged trades appear immediately.
+  // Loads on mount and whenever refreshKey bumps (a trade logged elsewhere on
+  // the page).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [refreshKey]);
+
+  // LIVE LIST: the panel used to refresh only on mount / refreshKey, so a
+  // position closed by TP, SL or liquidation stayed on screen until the user
+  // reloaded the page. Poll every 5s in the background (silent, so nothing
+  // flickers) and refresh immediately when the tab regains focus.
+  useEffect(() => {
+    const id = setInterval(() => { load(true); }, 5000);
+    const onFocus = () => load(true);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Margin usage strip: how much of the balance is already committed to open
   // crypto positions, and how much is actually free for a new one.
@@ -125,7 +145,13 @@ export function PositionsPanel({ balance, defaultInitial = null, compact = false
 
   function liveFor(tr) {
     const wsQ = livePrices[baseSymbol(tr.symbol)];
-    const cur = (wsQ && Number.isFinite(wsQ.price)) ? wsQ.price : polled[tr.symbol?.toUpperCase()];
+    // Price chain: browser WebSocket -> our own backend poll -> bare base
+    // symbol. The last hop matters when the row is stored as "BTCUSDT:PERP"
+    // but the backend answered for "BTCUSDT" (and when Binance is unreachable
+    // from the browser, which is the usual reason P&L showed nothing).
+    const up = (tr.symbol || "").toUpperCase();
+    const cur = (wsQ && Number.isFinite(wsQ.price)) ? wsQ.price
+      : (polled[up] ?? polled[up.replace(":PERP", "")]);
     if (!Number.isFinite(cur) || !tr.entry_price) return null;
     const move = tr.direction === "long"
       ? (cur - tr.entry_price) / tr.entry_price

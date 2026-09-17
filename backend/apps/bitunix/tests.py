@@ -90,7 +90,8 @@ class DemoEngineTests(TestCase):
         p = DemoPosition.objects.create(user=self.user, symbol="BTCUSDT",
                                         side="LONG", qty=0.01, entry_price=100000,
                                         leverage=5, tp_price=101000, sl_price=99000)
-        self.assertAlmostEqual(p.unrealized_pnl(100500), 3.797, places=3)  # 5 gross - fee
+        # GROSS by default now: 500 x 0.01 = 5.00, fee reported separately.
+        self.assertAlmostEqual(p.unrealized_pnl(100500), 5.0, places=3)
         self.assertIsNone(p.check_tp_sl(100500))
         self.assertEqual(p.check_tp_sl(101200), "tp")
         self.assertEqual(p.check_tp_sl(98900), "sl")
@@ -99,7 +100,8 @@ class DemoEngineTests(TestCase):
         p = DemoPosition.objects.create(user=self.user, symbol="ETHUSDT",
                                         side="SHORT", qty=0.5, entry_price=4000,
                                         leverage=3, tp_price=3900, sl_price=4100)
-        self.assertAlmostEqual(p.unrealized_pnl(3950), 22.615, places=3)  # 25 gross - fee
+        # GROSS by default now: 50 x 0.5 = 25.00.
+        self.assertAlmostEqual(p.unrealized_pnl(3950), 25.0, places=3)
         self.assertEqual(p.check_tp_sl(3890), "tp")
         self.assertEqual(p.check_tp_sl(4110), "sl")
 
@@ -346,12 +348,15 @@ class FeeAndThrottleTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user("u7", password="p")
 
-    def test_demo_pnl_nets_round_trip_fee(self):
+    def test_demo_pnl_is_gross_and_fee_is_reported_separately(self):
         p = DemoPosition.objects.create(user=self.user, symbol="BTCUSDT",
                                         side="LONG", qty=1, entry_price=100,
                                         leverage=1, margin=100)
-        # gross move +10 → 10; fee = (100+110)*0.0006 = 0.126 → net 9.874
-        self.assertAlmostEqual(p.unrealized_pnl(110), 9.874, places=3)
+        # gross move +10 → 10.00 shown; fee = (100+110)*0.0006 = 0.126 is
+        # returned to the UI as an estimate but NOT deducted.
+        self.assertAlmostEqual(p.unrealized_pnl(110), 10.0, places=3)
+        self.assertAlmostEqual(p.gross_pnl(110), 10.0, places=3)
+        self.assertAlmostEqual(p.round_trip_fee(110), 0.126, places=3)
 
 
 class RiskLimitEnforcementTests(TestCase):

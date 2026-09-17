@@ -228,6 +228,9 @@ def positions_view(request):
                 "margin": p.margin, "tpPrice": p.tp_price, "slPrice": p.sl_price,
                 "liqPrice": p.liq_price,
                 "markPrice": price, "unrealizedPNL": p.unrealized_pnl(price),
+                # DISPLAY ONLY — these are never subtracted from unrealizedPNL.
+                "pnlGross": p.gross_pnl(price),
+                "estFee": p.round_trip_fee(price),
                 "positionValue": (round(price * p.qty, 4) if price else None),
                 "roe": (round(p.unrealized_pnl(price) / p.margin * 100, 2)
                         if price and p.margin else None),
@@ -243,8 +246,11 @@ def positions_view(request):
             user=request.user, closed_at__isnull=False)[:20]]
         margin_used = round(sum(r["margin"] or 0 for r in rows), 4)
         upnl = round(sum(r["unrealizedPNL"] or 0 for r in rows), 4)
+        est_fee = round(sum(r["estFee"] or 0 for r in rows), 4)
         return Response({"mode": "demo", "positions": rows, "history": closed,
-                         "marginUsed": margin_used, "unrealizedPNL": upnl})
+                         "marginUsed": margin_used, "unrealizedPNL": upnl,
+                         # estimate shown next to PnL, not deducted from it
+                         "estFee": est_fee})
 
     if not c.configured:
         return Response({"error": "Bitunix not configured."}, status=400)

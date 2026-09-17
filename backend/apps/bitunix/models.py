@@ -10,9 +10,18 @@ from django.conf import settings
 from django.db import models
 
 
-# Bitunix taker fee (~0.06%); round-trip = open + close. Charged in demo so
-# paper results aren't rosier than live.
+# Bitunix taker fee (~0.06%); round-trip = open + close.
+#
+# 2026-09: the fee is NO LONGER deducted from demo PnL. The demo tab now shows
+# the same gross number the manual "test" journal shows, so the two can never
+# disagree, and the fee travels to the UI as an ESTIMATE for display only
+# (`round_trip_fee`). Set DEMO_PNL_NET_OF_FEES=1 to restore the old behaviour.
 FEE_RATE = 0.0006
+
+
+def _net_of_fees_enabled():
+    import os
+    return str(os.getenv("DEMO_PNL_NET_OF_FEES", "")).lower() in ("1", "true", "yes")
 
 
 class DemoPosition(models.Model):
@@ -51,12 +60,26 @@ class DemoPosition(models.Model):
         notional_out = self.qty * (exit_price if exit_price else self.entry_price)
         return round((notional_in + notional_out) * FEE_RATE, 6)
 
-    def unrealized_pnl(self, price):
+    def gross_pnl(self, price):
+        """Raw price move x quantity. No fee, no adjustment — this is the number
+        that must move the instant the price moves."""
         if price is None:
             return None
         d = (price - self.entry_price) if self.side == "LONG" else (self.entry_price - price)
-        # net of the round-trip fee, so demo PnL matches what a real fill nets
-        return round(d * self.qty - self.round_trip_fee(price), 4)
+        return round(d * self.qty, 4)
+
+    def unrealized_pnl(self, price):
+        """PnL as shown in the app: GROSS by default.
+
+        The round-trip fee is still calculated (`round_trip_fee`) and sent to
+        the UI beside this number, but it is not subtracted here.
+        """
+        gross = self.gross_pnl(price)
+        if gross is None:
+            return None
+        if _net_of_fees_enabled():
+            return round(gross - self.round_trip_fee(price), 4)
+        return gross
 
     @property
     def liq_price(self):

@@ -111,6 +111,12 @@ export function BitunixMiniPanel({ refreshKey, demoBalance }) {
             <p className={`tnum text-sm ${Number(positions?.unrealizedPNL) >= 0 ? "text-up" : "text-down"}`}>
               {fmt(positions?.unrealizedPNL, 2)}
             </p>
+            {/* Estimate only. The fee is NOT deducted from the PnL above. */}
+            {positions?.estFee != null && (
+              <p className="text-[10px] text-mist-500 tnum">
+                {t("bx_est_fee")} ≈ {fmt(positions.estFee, 2)}
+              </p>
+            )}
           </div>
         </div>
       ) : status?.connected && acctRow && (
@@ -180,6 +186,13 @@ export function BitunixMiniPanel({ refreshKey, demoBalance }) {
                       {Number(pnl) >= 0 ? "+" : ""}{fmt(pnl, 2)}
                     </span>
                   </div>
+                  {/* Shown for information only — never subtracted from PnL. */}
+                  {p.estFee != null && (
+                    <div className={cell}>
+                      <span className={lab}>{t("bx_est_fee")}</span>
+                      <span className={`${val} text-mist-400`}>≈ {fmt(p.estFee, 3)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
