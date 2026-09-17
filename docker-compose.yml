@@ -1,0 +1,55 @@
+services:
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: smartpips-backend
+
+    restart: unless-stopped
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      POSTGRES_HOST: smartpips-postgres
+      POSTGRES_PORT: "5432"
+
+    networks:
+      - smartpips_network
+
+    ports:
+      - "127.0.0.1:8001:8000"
+
+    command:
+      - gunicorn
+      - --workers
+      - "3"
+      - --bind
+      - 0.0.0.0:8000
+      - --timeout
+      - "120"
+      - config.wsgi:application
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    container_name: smartpips-frontend
+
+    restart: unless-stopped
+
+    networks:
+      - smartpips_network
+
+    ports:
+      - "127.0.0.1:8082:80"
+
+
+networks:
+
+  smartpips_network:
+    external: true

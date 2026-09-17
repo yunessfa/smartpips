@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+body {
+  margin: 0;
+  background: #0B0E11;
+  color: #EAECEF;
+  font-family: "Inter", "Vazirmatn", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* frosted-glass surfaces */
+.glass {
+  background: rgba(18, 22, 28, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.card-lift { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.card-lift:hover { transform: translateY(-2px); border-color: rgba(224,168,46,0.35); box-shadow: 0 12px 30px -16px rgba(0,0,0,0.7); }
+
+/* Persian uses Vazirmatn across the app */
+html.font-fa, html.font-fa body { font-family: "Vazirmatn", "Inter", system-ui, sans-serif; }
+
+/* Latin numerals stay monospaced & tabular even inside RTL text */
+.tnum {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #2B3139; border-radius: 999px; border: 2px solid #0B0E11;
+}
+::-webkit-scrollbar-thumb:hover { background: #39414c; }
+
+@keyframes blink { 50% { opacity: 0.25; } }
+.live-dot { animation: blink 1.6s infinite; }
+
+/* gentle entrance for chat messages */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise 0.25s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* iOS Safari auto-zooms the whole page when a focused input's font-size is
+   under 16px. Forcing 16px on all form controls stops the zoom without
+   needing user-scalable=no to do all the work (which some iOS versions
+   ignore for accessibility reasons). */
+input, select, textarea, button {
+  font-size: 16px;
+}
+
+/* ---- exchange-app mobile chrome ---- */
+/* room for the bottom tab bar + iPhone home indicator */
+.pb-tabbar { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+.tabbar-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Sticky open-trades bar (Scalp page).
+   Must sit directly ON TOP of the mobile tab bar, which is ~3.5rem tall plus
+   the iOS home-indicator inset added by .tabbar-safe above. A plain
+   Tailwind `bottom-14` ignores that inset and the bar ends up partly under
+   the home indicator on notched iPhones. On md+ the tab bar is hidden
+   (`md:hidden`), so the bar drops flush to the bottom. */
+.trades-bar-offset {
+  bottom: calc(3.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .trades-bar-offset { bottom: 0; }
+}
+
+/* order book depth bars */
+.depth-bar { position: absolute; top: 0; bottom: 0; opacity: 0.12; }
+
+/* =====================================================================
+   PUBLIC SITE (marketing pages under src/site/)
+   Scoped to .site-* / .sx-* class names so none of it can reach the
+   trading panel. The panel's own rules above are untouched.
+   ===================================================================== */
+
+/* Display typography: tighter and heavier than the panel's utility type. */
+.site-display {
+  /* 700, not 600. At display sizes on a near-black background, 600 renders
+     optically thin and was a large part of why the old headlines read as
+     weak rather than dominant. */
+  font-weight: 700;
+  letter-spacing: -0.032em;
+  line-height: 1.02;
+  text-wrap: balance;
+  /* Headlines are the one place we want crisper stems than the browser's
+     default subpixel smoothing gives us on dark backgrounds. */
+  -webkit-font-smoothing: antialiased;
+}
+/* Vazirmatn needs a touch more line-height and no negative tracking, which
+   would otherwise crush Persian glyph joins. */
+html.font-fa .site-display {
+  /* Vazirmatn has no true 800, and negative tracking breaks Persian joining. */
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.28;
+}
+
+/* Gold accent applied to a single word/phrase inside a headline. */
+.sx-gold-text {
+  background: linear-gradient(100deg, #F0B90B 0%, #FCD535 45%, #F0B90B 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Floating glass navbar */
+.sx-glass {
+  background: rgba(11, 14, 17, 0.62);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Hairline grid backdrop — reads as a trading terminal, not a gradient blob. */
+.sx-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+/* Fades the grid out toward the edges so it never looks like wallpaper. */
+.sx-grid-mask {
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 78%);
+}
+
+/* A single soft gold light source. Used sparingly — max one per section. */
+.sx-spot {
+  background: radial-gradient(circle, rgba(240,185,11,0.14) 0%, rgba(240,185,11,0.05) 35%, transparent 70%);
+  filter: blur(28px);
+}
+
+/* Very fine film grain kills the "flat CSS gradient" look at large dark areas. */
+.sx-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.032;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Hairline separators that fade at both ends. */
+.sx-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+}
+
+/* Card with a light-catching top edge — gives depth without a border glow. */
+.sx-card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(24,29,37,0.9) 0%, rgba(18,22,28,0.9) 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: transform .45s cubic-bezier(.2,.7,.3,1), border-color .45s ease, box-shadow .45s ease;
+}
+.sx-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
+}
+.sx-card:hover {
+  border-color: rgba(240,185,11,0.22);
+  box-shadow: 0 24px 48px -28px rgba(0,0,0,0.9);
+}
+
+/* Magnetic button: JS nudges --mx/--my, CSS does the moving (GPU only). */
+.sx-magnetic {
+  transform: translate3d(var(--mx, 0px), var(--my, 0px), 0);
+  transition: transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s ease;
+}
+
+/* Sweep of light across the primary CTA on hover. */
+.sx-sheen { position: relative; overflow: hidden; }
+.sx-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.32), transparent);
+  transform: skewX(-18deg);
+  transition: left .6s cubic-bezier(.2,.7,.3,1);
+}
+.sx-sheen:hover::after { left: 120%; }
+
+/* Ticker marquee (pauses on hover so it never fights the reader). */
+@keyframes sx-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.sx-marquee { animation: sx-marquee 42s linear infinite; }
+.sx-marquee-rtl { animation-direction: reverse; }
+.sx-marquee-wrap:hover .sx-marquee { animation-play-state: paused; }
+
+/* Perspective wrapper for the floating dashboard mockup. */
+.sx-scene { perspective: 1800px; perspective-origin: 50% 30%; }
+
+/* Connector line that draws itself as the section scrolls in. */
+.sx-draw { stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+/* The public site is LTR-neutral: it uses logical properties throughout, so
+   the only RTL fix needed is flipping the marquee direction. */
+[dir="rtl"] .sx-marquee { animation-direction: reverse; }
+[dir="rtl"] .sx-marquee-rtl { animation-direction: normal; }

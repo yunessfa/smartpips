@@ -1,0 +1,18 @@
+Django==5.0.6
+djangorestframework==3.15.1
+django-cors-headers==4.3.1
+requests==2.32.3
+python-dotenv==1.0.1
+# Only needed if you run on PostgreSQL (set POSTGRES_DB etc.). SQLite works without it.
+psycopg2-binary==2.9.9
+gunicorn==22.0.0
+
+# Web Push notifications for scalp alerts
+pywebpush==1.14.1
+py-vapid==1.9.1
+
+# cTrader Open API (live data + execution; Twisted-based)
+ctrader-open-api==0.9.2
+service_identity>=24.1.0
+# keep pyOpenSSL compatible with cryptography to avoid GEN_EMAIL error
+pyOpenSSL==24.1.0
