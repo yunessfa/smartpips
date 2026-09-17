@@ -42,8 +42,165 @@ _cache: dict = {}
 _TTL_BY_TF = {"1m": 45, "5m": 90, "15m": 180, "1h": 600, "4h": 1800}
 
 
+# our symbol -> Yahoo Finance ticker. Spot tickers (XAUUSD=X) return 404, so
+# these are the COMEX front futures: gold and silver. They track spot closely
+# but carry a small basis (usually a few dollars on gold), which is fine for
+# indicators and structure, and is why they sit LAST in the chain.
+_YF = {"XAUUSD": "GC=F", "XAGUSD": "SI=F"}
+_YF_INTERVAL = {"1m": "1m", "5m": "5m", "15m": "15m", "1h": "60m"}
+_YF_RANGE = {"1m": "1d", "5m": "5d", "15m": "1mo", "1h": "3mo"}
+
+# How many lower-timeframe bars make one higher-timeframe bar. Used to build
+# 15m/1h/4h locally from 5m bars instead of spending one API call per
+# timeframe — that is what kept tripping Twelve Data's free-tier rate limit.
+_DERIVE_FROM_5M = {"15m": 3, "1h": 12, "4h": 48}
+
+# Twelve Data free tier allows ~8 requests/minute. Space our calls out.
+_TD_MIN_GAP = 9          # seconds between two Twelve Data requests
+_STALE_TTL = 6 * 60 * 60  # keep the last good bar set for emergencies
+
+
 def _ttl_for(timeframe):
     return _TTL_BY_TF.get(timeframe, 90)
+
+
+def _stale_put(key, val):
+    """Remember the last GOOD bar set for hours, as a last-resort source."""
+    if not val:
+        return val
+    try:
+        from django.core.cache import cache
+        cache.set("candles:stale:" + key, val, _STALE_TTL)
+    except Exception:
+        pass
+    return val
+
+
+def _stale_get(key):
+    try:
+        from django.core.cache import cache
+        return cache.get("candles:stale:" + key)
+    except Exception:
+        return None
+
+
+def _aggregate(candles, factor):
+    """Roll N lower-timeframe bars into one higher-timeframe bar.
+
+    open = first open, close = last close, high/low = extremes, volume = sum.
+    This is exactly how an exchange builds the higher timeframe, so the bars are
+    real, not synthetic. Only complete groups are emitted.
+    """
+    if not candles or factor < 2:
+        return candles or []
+    out = []
+    # Align to the end so the most recent (possibly partial) group is dropped
+    # rather than published as a finished bar.
+    usable = len(candles) - (len(candles) % factor)
+    for i in range(0, usable, factor):
+        chunk = candles[i:i + factor]
+        try:
+            out.append({
+                "time": chunk[0].get("time"),
+                "open": chunk[0]["open"],
+                "high": max(c["high"] for c in chunk),
+                "low": min(c["low"] for c in chunk),
+                "close": chunk[-1]["close"],
+                "volume": sum(c.get("volume") or 0 for c in chunk) or 1.0,
+            })
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
+def _yahoo_candles(symbol, timeframe, limit):
+    """Free, keyless metal bars from Yahoo Finance (COMEX front futures).
+
+    No API key, no rate limit worth worrying about — which is exactly what we
+    need when Twelve Data's free quota is exhausted. 4h is not offered, so the
+    caller derives it from 1h/5m.
+    """
+    ticker = _YF.get(symbol.replace(":PERP", ""))
+    interval = _YF_INTERVAL.get(timeframe)
+    if not (ticker and interval):
+        return None
+    try:
+        r = requests.get(
+            "https://query1.finance.yahoo.com/v8/finance/chart/" + ticker,
+            params={"interval": interval,
+                    "range": _YF_RANGE.get(timeframe, "5d"),
+                    "includePrePost": "false"},
+            headers={"User-Agent": "Mozilla/5.0"}, timeout=8,
+        )
+        if r.status_code != 200:
+            log.warning("yahoo %s (%s %s) -> HTTP %s", ticker, symbol,
+                        timeframe, r.status_code)
+            return None
+        result = ((r.json() or {}).get("chart") or {}).get("result") or []
+        if not result:
+            return None
+        res = result[0]
+        stamps = res.get("timestamp") or []
+        q = ((res.get("indicators") or {}).get("quote") or [{}])[0]
+        out = []
+        for i, ts in enumerate(stamps):
+            try:
+                o = q["open"][i]
+                h = q["high"][i]
+                lo = q["low"][i]
+                c = q["close"][i]
+                v = (q.get("volume") or [None] * len(stamps))[i]
+            except (KeyError, IndexError, TypeError):
+                continue
+            if None in (o, h, lo, c):
+                continue          # Yahoo pads gaps with nulls
+            out.append({"time": int(ts), "open": float(o), "high": float(h),
+                        "low": float(lo), "close": float(c),
+                        "volume": float(v or 1.0)})
+        return out[-limit:] or None
+    except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
+        log.warning("yahoo candles failed for %s %s: %s", symbol, timeframe, exc)
+        return None
+
+
+def _metal_fallback_candles(symbol, timeframe, limit):
+    """Metal bars from anywhere but LBank, in order of trustworthiness.
+
+    1. MT5/cTrader bridge (a real broker feed, if the bridge is running)
+    2. Twelve Data (spot XAU/USD, but a hard free-tier quota)
+    3. Yahoo COMEX futures (keyless, unlimited, small basis vs spot)
+    4. Derive the timeframe locally from 5m bars — one request feeds every
+       higher timeframe, which is how we stay inside the quota
+    5. The last good bar set we ever saw (marked stale)
+
+    Returns (candles, source_label) so the caller can log where bars came from.
+    """
+    mt5 = _mt5_candles(symbol, timeframe)
+    if mt5:
+        return mt5, "mt5-bridge"
+
+    td = _twelvedata_candles(symbol, timeframe, limit)
+    if td and len(td) >= 30:
+        return td, "twelvedata"
+
+    yf = _yahoo_candles(symbol, timeframe, limit)
+    if yf and len(yf) >= 30:
+        return yf, "yahoo"
+
+    # Derive from 5m. Note the 5m set itself comes through this same chain and
+    # is cached, so a single successful 5m fetch can serve 15m, 1h and 4h.
+    factor = _DERIVE_FROM_5M.get(timeframe)
+    if factor:
+        base_5m = fetch_candles(symbol, "5m", min(limit * factor, 1000))
+        derived = _aggregate(base_5m, factor)
+        if derived and len(derived) >= 30:
+            return derived, f"derived-from-5m(x{factor})"
+
+    stale = _stale_get(f"{symbol}:{timeframe}")
+    if stale:
+        return stale, "stale-cache"
+
+    return None, None
 
 
 def _cache_get(key, timeframe="5m"):
@@ -175,11 +332,27 @@ def _twelvedata_candles(symbol, timeframe, limit):
     source before LBank; its free tier rate-limits hard, which is one of the
     reasons for the move.
     """
-    td_symbol = _TD.get(symbol)
+    td_symbol = _TD.get(symbol.replace(":PERP", ""))
     interval = _TD_INTERVAL.get(timeframe, "5min")
     token = os.getenv("TWELVEDATA_KEY")
     if not (td_symbol and token):
         return None
+
+    # THROTTLE: the free tier is ~8 requests/minute and returns HTTP 429 with
+    # the key echoed in the error. Two symbols x four timeframes x a per-minute
+    # cron blew straight through it, which is why silver went blank. Skip the
+    # call entirely if we spoke to them moments ago; the caller then falls
+    # through to Yahoo or to locally derived bars.
+    try:
+        from django.core.cache import cache
+        if cache.get("td:cooldown"):
+            log.info("twelve data skipped for %s %s (rate-limit cooldown)",
+                     symbol, timeframe)
+            return None
+        cache.set("td:cooldown", True, _TD_MIN_GAP)
+    except Exception:
+        pass
+
     try:
         r = requests.get(
             "https://api.twelvedata.com/time_series",
@@ -207,8 +380,21 @@ def _twelvedata_candles(symbol, timeframe, limit):
             "time": _to_ts(v.get("datetime", "")),
         } for v in values]
         return candles or None
-    except (requests.RequestException, ValueError, KeyError, TypeError):
-        log.warning("legacy Twelve Data candles failed for %s %s", symbol, timeframe)
+    except requests.RequestException as exc:
+        # Never let the response body reach the log: on 429 Twelve Data echoes
+        # the full request URL, API key included.
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        if status == 429:
+            try:
+                from django.core.cache import cache
+                cache.set("td:cooldown", True, 120)   # back off for 2 minutes
+            except Exception:
+                pass
+        log.warning("Twelve Data candles failed for %s %s (HTTP %s)",
+                    symbol, timeframe, status or "n/a")
+        return None
+    except (ValueError, KeyError, TypeError):
+        log.warning("Twelve Data candles unparseable for %s %s", symbol, timeframe)
         return None
 
 
@@ -253,26 +439,23 @@ def fetch_candles(symbol: str, timeframe: str = "5m", limit: int = 200):
 
         lb = _lbank_metal_candles(symbol, timeframe, limit)
         if lb:
+            _stale_put(key, lb[-limit:])
             return _cache_put(key, lb[-limit:], timeframe)
 
-        # LBank returned nothing (WAF 403, contract delisted, endpoint moved).
-        # Sitting out indefinitely means "no gold signals, ever", which is what
-        # the user actually experienced. Unless METALS_STRICT_SOURCE=1 we fall
-        # back to the old chain: broker bridge first, then Twelve Data. The
-        # fallback is logged loudly because those bars come from a different
-        # book than LBank's, so stops measured on them carry a small basis risk.
+        # LBank's public kline endpoints answer 403 from behind their WAF even
+        # though the instrument list and the price work. "Sit out forever" means
+        # "no gold signals, ever", so unless METALS_STRICT_SOURCE=1 we take the
+        # best available substitute and say so in the log. Prices come from a
+        # different book, so treat exact levels with a small tolerance.
         strict = str(os.getenv("METALS_STRICT_SOURCE", "")).lower() in ("1", "true", "yes")
         if not strict:
-            mt5 = _mt5_candles(symbol, timeframe)
-            if mt5:
-                log.warning("metals fallback: %s %s bars from the MT5 bridge "
-                            "(LBank returned nothing)", symbol, timeframe)
-                return _cache_put(key, mt5[-limit:], timeframe)
-            td = _twelvedata_candles(symbol, timeframe, limit)
-            if td:
-                log.warning("metals fallback: %s %s bars from Twelve Data "
-                            "(LBank returned nothing)", symbol, timeframe)
-                return _cache_put(key, td[-limit:], timeframe)
+            bars, src = _metal_fallback_candles(symbol, timeframe, limit)
+            if bars:
+                log.warning("metals fallback: %s %s bars from %s "
+                            "(LBank klines unavailable)", symbol, timeframe, src)
+                if src != "stale-cache":
+                    _stale_put(key, bars[-limit:])
+                return _cache_put(key, bars[-limit:], timeframe)
 
         log.warning("no metal candles at all for %s %s — engine will sit out",
                     symbol, timeframe)

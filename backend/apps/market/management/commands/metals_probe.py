@@ -1,20 +1,21 @@
 """Explain, in one command, WHY there is or isn't gold/silver data.
 
-Run it on the SERVER (the box with internet), inside the backend container:
+Run on the SERVER, inside the backend container:
 
-    docker exec smartpips-backend python manage.py metals_probe
+    docker exec smartpips-backend python manage.py metals_probe --clear-cache
     docker exec smartpips-backend python manage.py metals_probe --symbol XAGUSD --tf 15m
 
-It walks the exact same code path the app uses, step by step, and prints the
-real failure at each step instead of collapsing everything into "no data":
+It walks the exact code path the app uses and prints the real failure at each
+step instead of collapsing everything into "no data":
 
-  1. settings        - which source is selected, which host is configured
-  2. instrument list - does LBank answer at all, and with how many contracts
-  3. symbol match    - which contract our XAUUSD resolved to
-  4. price           - last price from that contract
-  5. candles         - how many bars, how old the newest one is
-  6. app path        - apps.market.candles.fetch_candles (the layer the engine
-                       actually calls, including the fallback chain)
+  1. settings        - selected source, configured host, available fallbacks
+  2. instrument list - does LBank answer, and with how many contracts
+  3. symbol match    - which LBank contract our XAUUSD resolved to
+  4. price           - last price for that contract
+  5. LBank candles   - the kline endpoints (these are the ones behind the WAF)
+  6. app layer       - apps.market.candles.fetch_candles, i.e. what the engine
+                       really gets, including the fallback chain, and WHICH
+                       source supplied the bars
   7. engine          - what the strategy says about those bars right now
 
 Read-only. Safe on production.
@@ -40,8 +41,9 @@ class Command(BaseCommand):
         parser.add_argument("--tf", default="5m",
                             help="Timeframe for the candle probe (default 5m).")
         parser.add_argument("--clear-cache", action="store_true",
-                            help="Drop the cached symbol/price/candles first, "
-                                 "so the probe hits the network for real.")
+                            help="Drop cached symbol/price/candles and the "
+                                 "kline circuit breaker first, so the probe "
+                                 "really hits the network.")
 
     # ---------------------------------------------------------------- output
     def head(self, text):
@@ -66,27 +68,37 @@ class Command(BaseCommand):
         symbol = opts["symbol"].upper().replace(":PERP", "")
         tf = opts["tf"]
 
+        from django.core.cache import cache
+
         from apps.lbank import metals as lb
 
         if opts["clear_cache"]:
-            from django.core.cache import cache
             for key in (f"lbank:metal-symbol:{symbol}",
                         f"lbank:metal-price:{symbol}",
                         f"lbank:metal-candles:{symbol}:{tf}",
-                        "lbank:kline-endpoint"):
-                cache.delete(key)
-            for key in (f"candles:{symbol}:{tf}",):
+                        "lbank:kline-endpoint",
+                        lb._KLINE_DEAD_KEY,
+                        "td:cooldown",
+                        f"candles:{symbol}:{tf}"):
                 cache.delete(key)
             self.stdout.write("cache cleared for this symbol\n")
 
         # 1 -------------------------------------------------------- settings
         self.head("1. Settings")
         source = getattr(settings, "METALS_DATA_SOURCE", "lbank")
+        import os
         self.stdout.write(f"        METALS_DATA_SOURCE   = {source}")
         self.stdout.write(f"        LBANK_FUTURES_BASE   = {lb._BASE}")
         self.stdout.write(f"        product group        = {lb._PRODUCT_GROUP}")
-        if source != "lbank":
-            self.warn("metals are NOT on LBank right now (legacy chain active)")
+        self.stdout.write(
+            "        METALS_STRICT_SOURCE = "
+            f"{os.getenv('METALS_STRICT_SOURCE') or '(off - fallbacks allowed)'}")
+        self.stdout.write(
+            "        TWELVEDATA_KEY       = "
+            f"{'set' if os.getenv('TWELVEDATA_KEY') else 'MISSING'}")
+        if cache.get(lb._KLINE_DEAD_KEY):
+            self.note("LBank kline circuit breaker is OPEN (all endpoints were "
+                      "refused recently). Use --clear-cache to force a retry.")
 
         # 2 ------------------------------------------------- instrument list
         self.head("2. LBank instrument list")
@@ -97,13 +109,8 @@ class Command(BaseCommand):
             sample = [str(r.get("symbol")) for r in rows[:6] if isinstance(r, dict)]
             self.note("first few: " + ", ".join(sample))
         else:
-            err = lb.LAST_ERRORS.get(f"{lb._PUB}/instrument", "empty response")
-            self.fail(f"no contracts - {err}")
-            if "403" in str(err):
-                self.note("HTTP 403 = the venue's firewall refused this server. "
-                          "Browser headers are already sent; if it persists the "
-                          "server IP or its region is blocked, so metals must "
-                          "come from the fallback chain or a proxy.")
+            self.fail("no contracts - "
+                      f"{lb.LAST_ERRORS.get(lb._PUB + '/instrument', 'empty response')}")
 
         # 3 ------------------------------------------------------- symbol
         self.head("3. Symbol resolution")
@@ -132,23 +139,34 @@ class Command(BaseCommand):
             if age is not None and age > 900:
                 self.warn("newest bar is over 15 minutes old - stale feed")
         else:
-            self.fail("no candles from LBank (no kline endpoint answered)")
+            self.warn("no candles from LBank")
             for path, err in lb.LAST_ERRORS.items():
                 self.note(f"{path}: {err}")
+            self.note("403 on the kline paths while /instrument and /marketData "
+                      "answer 200 means the venue publishes prices but not "
+                      "public contract klines to us. That is THEIR gate, not a "
+                      "bug here - the fallback chain below covers it.")
 
         # 6 ------------------------------------------- the layer the app uses
         self.head(f"6. App candle layer ({tf})")
+        from apps.market.candles import _metal_fallback_candles
         from apps.market.candles import fetch_candles as app_candles
-        app_bars = app_candles(f"{symbol}", tf, 300)
+
+        app_bars = app_candles(symbol, tf, 300)
         if app_bars:
+            newest = app_bars[-1].get("time")
+            age = int(time.time() - newest) if newest else None
             self.good(f"fetch_candles() returned {len(app_bars)} bars "
-                      f"(last close {app_bars[-1]['close']})")
+                      f"(last close {app_bars[-1]['close']}"
+                      + (f", age={age}s)" if age is not None else ")"))
             if not bars:
-                self.warn("these came from the FALLBACK chain, not LBank - "
-                          "prices may differ slightly from LBank's book")
+                # Ask the chain which source would answer, for the report.
+                _, src = _metal_fallback_candles(symbol, tf, 300)
+                self.note(f"source: {src or 'cache'} (not LBank) - prices may "
+                          f"differ slightly from LBank's book")
         else:
-            self.fail("fetch_candles() returned nothing - the engine will sit "
-                      "out, which is exactly why there are no gold signals")
+            self.fail("fetch_candles() returned nothing - the engine sits out, "
+                      "which is exactly why there are no gold signals")
 
         # 7 -------------------------------------------------------- engine
         self.head("7. Strategy engine")
@@ -160,28 +178,37 @@ class Command(BaseCommand):
                 from apps.strategy.engine import run_strategy
                 live = app_bars[-1]["close"]
                 out = run_strategy(symbol, tf, app_bars, {}, live_price=live) or {}
+                grade = out.get("grade")
+                if isinstance(grade, dict):      # {'grade': '-', 'stars': 0, ...}
+                    grade = grade.get("grade")
                 self.stdout.write(
                     f"        signal={out.get('signal')} "
-                    f"score={out.get('score')} grade={out.get('grade')} "
+                    f"score={out.get('score')} grade={grade} "
                     f"quality={out.get('data_quality')}")
-                for r in (out.get("reasons_plain") or [])[:6]:
+                reasons = out.get("reasons_plain")
+                if isinstance(reasons, dict):
+                    reasons = list(reasons.values())
+                elif isinstance(reasons, str):
+                    reasons = [reasons]
+                for r in list(reasons or [])[:6]:
                     self.note(f"- {r}")
                 if out.get("signal") == "wait":
-                    self.note("'wait' with healthy bars is NOT a bug: the score "
-                              "is simply below the alert threshold "
-                              "(WatchItem.min_score, default 68).")
+                    self.note("'wait' on healthy bars is NOT a bug: the score is "
+                              "below the alert threshold (WatchItem.min_score, "
+                              "default 68).")
             except Exception as exc:
-                self.warn(f"engine call failed: {exc}")
+                self.warn(f"engine call failed: {type(exc).__name__}: {exc}")
 
         # ------------------------------------------------------------ verdict
         self.head("Verdict")
-        if self.failures == 0:
-            self.stdout.write(f"  {OK}Gold data path is healthy.{END}")
-        elif app_bars:
+        if app_bars and len(app_bars) >= 30 and price:
             self.stdout.write(
-                f"  {WARN}LBank is failing, but bars are coming from the "
-                f"fallback source, so signals can still be produced.{END}")
+                f"  {OK}Gold/silver data is flowing: price + {len(app_bars)} "
+                f"bars. Signals are possible; whether one fires depends on the "
+                f"score.{END}")
+        elif app_bars:
+            self.stdout.write(f"  {WARN}Partial data only.{END}")
         else:
             self.stdout.write(
-                f"  {BAD}No metal bars from any source - no gold signals are "
+                f"  {BAD}No metal bars from any source - no metal signals are "
                 f"possible until this is fixed.{END}")

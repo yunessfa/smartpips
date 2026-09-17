@@ -41,26 +41,6 @@ _PUB = "/cfd/openApi/v1/pub"
 _PRODUCT_GROUP = "SwapU"          # USDT-margined perpetual
 _TIMEOUT = 8
 
-# LBank's perpetual host sits behind a WAF that answers 403 Forbidden to bare
-# requests coming from a datacentre IP with no browser headers. That is exactly
-# what silently killed the gold feed: every /pub call returned 403, so
-# resolve_symbol() found no contract, fetch_candles() returned None, and the
-# engine sat out forever. Sending ordinary browser headers is what the probe
-# showed to be the difference.
-_HEADERS = {
-    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                   "AppleWebKit/537.36 (KHTML, like Gecko) "
-                   "Chrome/125.0.0.0 Safari/537.36"),
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Origin": "https://www.lbank.com",
-    "Referer": "https://www.lbank.com/",
-}
-
-# Last transport error per path. Read by `manage.py metals_probe` so the
-# operator sees WHY there is no gold data instead of just "no data".
-LAST_ERRORS: dict = {}
-
 # Our internal symbol -> the tokens we accept in an LBank contract symbol.
 # Matching is substring-based and case-insensitive, so "GOLDUSDT",
 # "XAUUSDT" and "GOLD(XAU)USDT" all resolve for XAUUSD.
@@ -74,32 +54,52 @@ SUPPORTED = frozenset(_MATCH)
 # Cache keys / TTLs. Symbol resolution barely ever changes, prices must not be
 # stale, and the working kline endpoint is worth remembering for a whole day.
 _SYMBOL_TTL = 6 * 60 * 60
-# A negative result must NOT stick for 6 hours: when LBank (or its WAF)
-# recovers we want the next poll to notice, not the next working day.
-_SYMBOL_MISS_TTL = 120
+_SYMBOL_MISS_TTL = 2 * 60         # a *failed* lookup expires fast
 _PRICE_TTL = 10
 _ENDPOINT_TTL = 24 * 60 * 60
 _CANDLE_TTL = {"1m": 45, "5m": 90, "15m": 180, "1h": 600, "4h": 1800}
+
+# When every kline candidate has been refused, stop probing for a while. Four
+# blocked requests per candle fetch (x2 timeframes x every cron minute) is a
+# lot of wasted latency and a flooded log for no benefit.
+_KLINE_DEAD_TTL = 30 * 60
+_KLINE_DEAD_KEY = "lbank:kline-unavailable"
+
+# Last error seen per endpoint, for the metals_probe command. Diagnostics only.
+LAST_ERRORS: dict = {}
+
+# This venue sits behind openresty/WAF. A bare urllib/requests default
+# User-Agent gets a blanket 403 on some paths, so present as a normal browser.
+_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/126.0.0.0 Safari/537.36"),
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Origin": "https://www.lbank.com",
+    "Referer": "https://www.lbank.com/",
+}
 
 
 def _get(path, params):
     """GET an LBank public endpoint. Returns parsed JSON or None. Never raises.
 
-    Records the failure reason in LAST_ERRORS so a 403 (WAF / geo block) can be
-    told apart from a timeout or a delisted contract.
+    The HTTP status is recorded in LAST_ERRORS so callers (and metals_probe)
+    can tell "blocked by the WAF" apart from "endpoint does not exist" apart
+    from "network down" instead of all three collapsing into "no data".
     """
     try:
-        r = requests.get(f"{_BASE}{path}", params=params,
-                         headers=_HEADERS, timeout=_TIMEOUT)
-        if r.status_code >= 400:
+        r = requests.get(f"{_BASE}{path}", params=params, timeout=_TIMEOUT,
+                         headers=_HEADERS)
+        if r.status_code != 200:
             LAST_ERRORS[path] = f"HTTP {r.status_code}"
-            log.warning("lbank GET %s -> HTTP %s (%s)", path, r.status_code,
-                        (r.text or "")[:160])
+            # Body is an HTML error page here; one short line is enough.
+            log.warning("lbank GET %s -> HTTP %s", path, r.status_code)
             return None
         LAST_ERRORS.pop(path, None)
         return r.json()
     except (requests.RequestException, ValueError) as exc:
-        LAST_ERRORS[path] = str(exc)
+        LAST_ERRORS[path] = str(exc)[:120]
         log.warning("lbank GET %s failed: %s", path, exc)
         return None
 
@@ -157,10 +157,14 @@ def resolve_symbol(symbol):
 
     if found:
         log.info("lbank metals: %s -> %s", symbol, found)
+        cache.set(key, found, _SYMBOL_TTL)
     else:
         log.warning("lbank metals: %s not listed on LBank (%d instruments seen)",
                     symbol, len(rows))
-    cache.set(key, found, _SYMBOL_TTL if found else _SYMBOL_MISS_TTL)
+        # Short TTL on a miss: a blocked or empty instrument list used to be
+        # remembered for six hours, which turned a 30-second outage into half a
+        # day without metals.
+        cache.set(key, found, _SYMBOL_MISS_TTL)
     return found or None
 
 
@@ -214,6 +218,14 @@ def fetch_prices(symbols=("XAUUSD", "XAGUSD")):
 _KLINE_ATTEMPTS = (
     (f"{_PUB}/getKline", {"1m": "1min", "5m": "5min", "15m": "15min",
                           "1h": "1hour", "4h": "4hour"}, "size"),
+    # Extra spellings seen in the wild / in other LBank SDKs. Cheap to try once,
+    # and the circuit breaker below stops us retrying them forever.
+    (f"{_PUB}/getKLine", {"1m": "1min", "5m": "5min", "15m": "15min",
+                          "1h": "1hour", "4h": "4hour"}, "size"),
+    (f"{_PUB}/klines", {"1m": "1min", "5m": "5min", "15m": "15min",
+                        "1h": "1hour", "4h": "4hour"}, "size"),
+    (f"{_PUB}/market/kline", {"1m": "1min", "5m": "5min", "15m": "15min",
+                              "1h": "1hour", "4h": "4hour"}, "size"),
     (f"{_PUB}/getKline", {"1m": "1m", "5m": "5m", "15m": "15m",
                           "1h": "1h", "4h": "4h"}, "limit"),
     (f"{_PUB}/kline", {"1m": "1min", "5m": "5min", "15m": "15min",
@@ -282,6 +294,12 @@ def fetch_candles(symbol, timeframe="5m", limit=300):
     if not contract:
         return None
 
+    # CIRCUIT BREAKER: every candidate was refused recently, so don't spend
+    # four blocked round-trips before every single candle read. The caller's
+    # fallback chain takes over immediately instead.
+    if cache.get(_KLINE_DEAD_KEY):
+        return None
+
     # Try the endpoint that worked last time first.
     remembered = cache.get("lbank:kline-endpoint")
     attempts = list(_KLINE_ATTEMPTS)
@@ -303,7 +321,10 @@ def fetch_candles(symbol, timeframe="5m", limit=300):
                       _CANDLE_TTL.get(timeframe, 90))
             return candles[-limit:]
 
-    log.warning("lbank metals: no kline endpoint answered for %s %s — strategy "
-                "will sit this one out rather than run on synthetic bars",
-                symbol, timeframe)
+    cache.set(_KLINE_DEAD_KEY, True, _KLINE_DEAD_TTL)
+    log.warning("lbank metals: no kline endpoint answered for %s %s (%s) — "
+                "candles will come from the fallback chain; retrying LBank in "
+                "%d min", symbol, timeframe,
+                ", ".join(f"{p}:{e}" for p, e in LAST_ERRORS.items()) or "no detail",
+                _KLINE_DEAD_TTL // 60)
     return None
