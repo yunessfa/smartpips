@@ -1,0 +1,40 @@
+Compared with delivered smartpips-backtest-hotfix.zip.
+Historical migrations unchanged: 44 files.
+TradingView.jsx and PositionChart.jsx unchanged.
+
+FIX-LOGIN-BACKTEST-FA.md
+QA/revision2-backend-tests.log
+QA/revision2-browser-test.json
+QA/revision2-build.log
+QA/revision2-desktop-fixture.png
+QA/revision2-frontend-tests.log
+QA/revision2-migration-smoke.log
+QA/revision2-mobile-fixture.png
+QA/revision2-public-data-test.json
+backend/.env.example
+backend/apps/accounts/management/__init__.py
+backend/apps/accounts/management/commands/__init__.py
+backend/apps/accounts/management/commands/prepare_refresh.py
+backend/apps/accounts/refresh_smoke.py
+backend/apps/accounts/test_refresh_deployment.py
+backend/apps/accounts/views.py
+backend/apps/ai/providers.py
+backend/apps/chat/scalp.py
+backend/apps/chat/test_explanation.py
+backend/apps/chat/urls.py
+backend/apps/chat/views.py
+backend/apps/market/candles.py
+backend/apps/strategy/backtest.py
+backend/apps/strategy/backtest_data.py
+backend/apps/strategy/config_views.py
+backend/apps/strategy/test_data_recovery.py
+backend/apps/strategy/test_hotfix.py
+backend/apps/strategy/views.py
+deploy/release-login-backtest-fix.sh
+frontend/src/api/client.js
+frontend/src/auth/AuthContext.jsx
+frontend/src/components/ui.jsx
+frontend/src/i18n/translations.js
+frontend/src/pages/Scalp.jsx
+frontend/src/pages/Strategies.jsx
+frontend/tests/client.test.mjs

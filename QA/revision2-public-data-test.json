@@ -1,0 +1,25 @@
+{
+  "source": "Public Bitunix response; no account or order API",
+  "data": {
+    "received": 500,
+    "used": 74,
+    "invalid_rows": 21,
+    "open_rows_excluded": 0,
+    "gaps_detected": 22,
+    "window_start": 1792252200.0,
+    "window_end": 1792274100.0,
+    "partial_history": true,
+    "short_window": true,
+    "source": null,
+    "provider": {}
+  },
+  "trades": 0,
+  "diagnostics": {
+    "bars_evaluated": 13,
+    "base_engine_wait": 13,
+    "strategy_veto": 0,
+    "invalid_plan": 0,
+    "unfillable_entry": 0
+  },
+  "performance_validated": false
+}

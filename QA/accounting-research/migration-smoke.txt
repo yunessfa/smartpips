@@ -1,0 +1,3 @@
+Accounting schema ready. Historical trade values untouched.
+Accounting schema ready. Historical trade values untouched.
+{"upgrade_migration": "PASS", "repeat_idempotent": "PASS", "historical_values_preserved": "PASS", "db": "SQLite installed-state simulation, NOT PostgreSQL / fresh-install validation"}

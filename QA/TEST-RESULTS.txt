@@ -1,0 +1,13 @@
+SmartPips local review — 2026-10-17
+Backend application tests: 82 passed, using config.test_settings (isolated model-created database).
+Frontend request/refresh tests: 7 passed (Node test runner).
+Django system check: no issues.
+Production frontend build: passed; non-fatal bundle/import warnings remain.
+UI fixture checks: Chromium, 1440px and 390px; no page JavaScript errors, no horizontal overflow.
+UI interactions: timeframe switch, symbol switch, expanded levels; calendar ok/unavailable/empty.
+Screenshots use synthetic fixtures, NOT live market data or backtest results.
+External TradingView iframe requests were blocked in the fixture test; live embed connectivity not validated.
+CRITICAL: normal clean-database migrations fail on pre-existing duplicate trades columns.
+Original migration files were NOT modified; new accounts/0004_refreshsession.py was added.
+No live-site deployment, exchange account access or real orders were performed.
+See REVIEW-FA.md for limitations and staging requirements.

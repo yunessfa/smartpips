@@ -1,0 +1,111 @@
+{
+  "fixtureOnly": true,
+  "noExchangeNetworkAccess": true,
+  "simulatedOrders": 2,
+  "reducedMotion": true,
+  "errors": [],
+  "checks": [
+    {
+      "name": "scalp-1440",
+      "overflow": false
+    },
+    {
+      "name": "trades-1440",
+      "overflow": false
+    },
+    {
+      "page": "5000-trades",
+      "width": 1440,
+      "visibleTableRows": 50,
+      "loadMs": 1143
+    },
+    {
+      "name": "strategies-1440",
+      "overflow": false
+    },
+    {
+      "name": "backtest-modal-1440",
+      "overflow": false
+    },
+    {
+      "name": "dashboard-1440",
+      "overflow": false
+    },
+    {
+      "name": "bitunix-1440",
+      "overflow": false
+    },
+    {
+      "name": "leverage-warning-1440",
+      "overflow": false
+    },
+    {
+      "name": "public-1440",
+      "overflow": false
+    },
+    {
+      "name": "scalp-390",
+      "overflow": false
+    },
+    {
+      "name": "trades-390",
+      "overflow": false
+    },
+    {
+      "page": "5000-trades",
+      "width": 390,
+      "visibleTableRows": 0,
+      "loadMs": 1104
+    },
+    {
+      "name": "strategies-390",
+      "overflow": false
+    },
+    {
+      "name": "backtest-modal-390",
+      "overflow": false
+    },
+    {
+      "name": "dashboard-390",
+      "overflow": false
+    },
+    {
+      "name": "bitunix-390",
+      "overflow": false
+    },
+    {
+      "name": "leverage-warning-390",
+      "overflow": false
+    },
+    {
+      "name": "public-390",
+      "overflow": false
+    },
+    {
+      "name": "confirm-demo-mobile",
+      "overflow": false
+    },
+    {
+      "mode": "demo",
+      "highLeverageSubmit": "fixture accepted",
+      "leverage": 50
+    },
+    {
+      "name": "confirm-real-mobile",
+      "overflow": false
+    },
+    {
+      "mode": "real",
+      "highLeverageSubmit": "fixture accepted",
+      "leverage": 50
+    },
+    {
+      "name": "trades-empty-mobile",
+      "overflow": false
+    },
+    {
+      "name": "trades-error-mobile",
+      "overflow": false
+    }
+  ]
+}

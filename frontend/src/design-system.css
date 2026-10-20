@@ -1,0 +1,15 @@
+/* Central tokens for the audit surfaces. Legacy chart sizes/layout stay intact. */
+:root {
+  --sp-bg-0: #050607; --sp-bg-1: #080A0C; --sp-bg-2: #0D1013;
+  --sp-text: #F3F4F5; --sp-secondary: #A8B0BA; --sp-muted: #6F7883;
+  --sp-gold: #CFA65B; --sp-buy: #56A581; --sp-sell: #C87575;
+  --sp-page-enter: 600ms; --sp-section-reveal: 500ms; --sp-hover: 200ms;
+  --sp-signal-pulse: 2s; --sp-chart-draw: 2s;
+  --sp-persian: 'Vazirmatn', system-ui, sans-serif;
+  --sp-technical: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+}
+.sp-audit { background: var(--sp-bg-2); color: var(--sp-text); }
+.sp-audit .tnum, .sp-audit .font-mono { font-family: var(--sp-technical); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+  .sp-audit, .sp-audit * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
