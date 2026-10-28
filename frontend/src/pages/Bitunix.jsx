@@ -1,3 +1,4 @@
+import { formatOrderWarning, formatOrderError } from "../lib/orderRisk.js";
 import { useEffect, useState } from "react";
 import { Panel, Badge, Button, Spinner } from "../components/ui.jsx";
 import { bitunixApi } from "../api/client.js";
@@ -22,7 +23,7 @@ const th = "text-left text-[11px] text-mist-500 font-normal px-2 py-1";
 const td = "px-2 py-1 text-[12px] text-mist-100 tnum whitespace-nowrap";
 
 export default function Bitunix() {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const [status, setStatus] = useState(null);
   const [account, setAccount] = useState(null);
   const [mode, setMode] = useState(() => localStorage.getItem("bx_mode") || "demo");
@@ -213,8 +214,8 @@ BITUNIX_SECRET_KEY=...`}</pre>
       </Panel>
 
       {/* order form */}
-      <OrderForm mode={mode} onDone={(result) => { setNotice(t("bx_order_ok") + (result?.warnings?.length ? ` — ${t("leverage_advisory")}` : "")); loadAll(); }}
-        onError={setErr} available={acctRow?.available} />
+      <OrderForm mode={mode} onDone={(result) => { setNotice(t("bx_order_ok") + (result?.warnings?.length ? ` — ${result.warnings.map(w => formatOrderWarning(w, isRTL)).join(" · ")}` : "")); loadAll(); }}
+        onError={(message) => setErr(formatOrderError(message, isRTL))} available={acctRow?.available} />
 
       {/* positions */}
       <Panel title={`${t("bx_positions")} (${mode === "demo" ? t("bx_demo") : t("bx_real")})`}
@@ -322,7 +323,7 @@ BITUNIX_SECRET_KEY=...`}</pre>
 }
 
 function OrderForm({ mode, onDone, onError, available }) {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const [f, setF] = useState({ symbol: "BTCUSDT", side: "BUY", orderType: "MARKET",
     qty: "", price: "", leverage: 5, tpPrice: "", slPrice: "", sizeBy: "margin", margin: "" });
   const [busy, setBusy] = useState(false);
@@ -364,7 +365,7 @@ function OrderForm({ mode, onDone, onError, available }) {
       });
       setConfirming(false);
       onDone(result);
-    } catch (e) { setLocalErr(e.message); onError(e.message); setConfirming(false); }
+    } catch (e) { setLocalErr(formatOrderError(e.message, isRTL)); onError(e.message); setConfirming(false); }
     finally { setBusy(false); }
   }
 
@@ -404,7 +405,7 @@ function OrderForm({ mode, onDone, onError, available }) {
               <button key={mm} onClick={async () => {
                   setF({ ...f, marginMode: mm });
                   try { await bitunixApi.setMarginMode({ symbol: f.symbol.toUpperCase(), marginMode: mm }); }
-                  catch (e) { setLocalErr(e.message); }
+                  catch (e) { setLocalErr(formatOrderError(e.message, isRTL)); }
                 }}
                 className={`flex-1 py-1.5 text-xs font-semibold rounded ${
                   (f.marginMode || "ISOLATION") === mm ? "bg-ink-600 text-mist-100" : "text-mist-500"}`}>

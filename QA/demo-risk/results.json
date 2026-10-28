@@ -1,0 +1,28 @@
+{
+  "fixtureOnly": true,
+  "nonLocalNetworkBlocked": true,
+  "simulatedOrders": 4,
+  "errors": [],
+  "checks": [
+    {
+      "width": 390,
+      "margin": 50,
+      "leverage": 75,
+      "qty": 3804.403,
+      "advisorySubmit": true,
+      "successWarningsReadable": true,
+      "hardErrorsReadable": true,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1440,
+      "margin": 50,
+      "leverage": 75,
+      "qty": 3804.403,
+      "advisorySubmit": true,
+      "successWarningsReadable": true,
+      "hardErrorsReadable": true,
+      "horizontalOverflow": false
+    }
+  ]
+}

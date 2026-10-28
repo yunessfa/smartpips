@@ -107,6 +107,7 @@ export default function App() {
                 run only inside the panel — never for anonymous site visitors. */}
             <LivePriceProvider>
             <Layout>
+              <Suspense fallback={<div role="status" className="flex-1 min-h-0 p-6 text-mist-500" data-page-loading>در حال بارگذاری صفحه…</div>}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/chat" element={<Chat />} />
@@ -121,6 +122,7 @@ export default function App() {
                 <Route path="/strategies" element={<Strategies />} />
                 <Route path="*" element={<Navigate to="/app" replace />} />
               </Routes>
+              </Suspense>
             </Layout>
             </LivePriceProvider>
           </Protected>

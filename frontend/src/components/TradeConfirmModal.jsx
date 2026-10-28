@@ -1,3 +1,5 @@
+import { TakeProfitPlan } from "./TakeProfitPlan.jsx";
+import { formatOrderWarning, formatOrderError } from "../lib/orderRisk.js";
 import { useEffect, useState } from "react";
 import { bitunixApi, prefsApi } from "../api/client.js";
 import { useI18n } from "../i18n/index.jsx";
@@ -100,6 +102,11 @@ export function TradeConfirmModal({ mode, signal, livePrice, demoBalance, onClos
     }
   }
   qty = Number(qty.toFixed(qty < 1 ? 6 : 3));
+  const stopPx = Number(signal.stop_loss);
+  const estimatedStopLoss = entryPx > 0 && stopPx > 0
+    ? qty * (Math.abs(entryPx - stopPx) + (entryPx + stopPx) * 0.0006) : null;
+  const stopWarning = mode === "demo" && Number(demoBalance) > 0 && estimatedStopLoss > Number(demoBalance) * 0.005 * 1.001
+    ? { code: "demo_trade_risk_cap", estimated_risk_usdt: estimatedStopLoss, recommended_max_pct: 0.5 } : null;
   const estFee = fee(notional);
   const liqFrac = 0.95 / lev;
   const estLiq = entryPx ? (isBuy ? entryPx * (1 - liqFrac) : entryPx * (1 + liqFrac)) : null;
@@ -140,7 +147,7 @@ export function TradeConfirmModal({ mode, signal, livePrice, demoBalance, onClos
         slPrice: signal.stop_loss || undefined,
       });
       onDone(res);
-    } catch (e) { setErr(e.message); }
+    } catch (e) { setErr(formatOrderError(e.message, isRTL)); }
     finally { setBusy(false); }
   }
 
@@ -235,7 +242,7 @@ export function TradeConfirmModal({ mode, signal, livePrice, demoBalance, onClos
               : "Higher leverage magnifies losses and liquidation risk. Exchange limits, available margin and other risk checks still apply."}</p>
         </div>
         {mode === "demo" && <div className="mb-3 rounded-lg border border-gold/30 p-2 text-xs text-mist-300">
-          <p>{isRTL ? "پروفایل دمو: ریسک ۰٫۵٪، زیان روزانه ۲٪ و مجموع ریسک باز ۱٫۵٪. اهرم ۱۰× پیشنهاد است، نه سقف مسدودکننده. کنترل فاصلهٔ استاپ تا لیکوییدشدن همچنان فعال است." : "Demo: 0.5% risk, 2% daily loss and 1.5% open risk remain enforced. 10x is advisory; stop/liquidation validation still applies."}</p>
+          <p>{isRTL ? "دمو: ریسک هر معامله ۰٫۵٪، مجموع ریسک باز ۱٫۵٪ و اهرم ۱۰× فقط پیشنهاد و هشدارند؛ مانع ثبت سفارش نیستند. سقف زیان روزانه ۲٪، تعداد پوزیشن‌ها، موجودی و اعتبار استاپ/فاصله تا لیکوییدشدن همچنان بررسی می‌شوند." : "Demo: 0.5% per-trade risk, 1.5% total open risk and 10x leverage are recommendations only, not order blocks. The 2% daily loss limit, position count, available margin and stop/liquidation checks still apply."}</p>
           <button type="button" className="mt-2 text-gold-soft" onClick={() => {
             const stop = Number(signal.stop_loss), balance = Number(demoBalance);
             const distance = Math.abs(entryPx-stop) + (entryPx+stop)*0.0006;
@@ -294,9 +301,14 @@ export function TradeConfirmModal({ mode, signal, livePrice, demoBalance, onClos
           <Row k={t("margin_needed")} v={`${margin.toFixed(2)} USDT`}
             tone={overFree ? "text-down" : sizeMode === "margin" ? "text-gold-soft" : undefined} />
           <Row k={`${t("est_liquidation")} *`} v={fmtPrice(estLiq)} tone="text-down" />
+          {mode === "demo" && estimatedStopLoss != null && <Row
+            k={isRTL ? "زیان تخمینی تا استاپ + کارمزد رفت‌وبرگشت" : "Estimated stop loss + round-trip fees"}
+            v={`${estimatedStopLoss.toFixed(2)} USDT`} tone="text-gold-soft" />}
           <Row k={t("bx_est_fee")} v={`${estFee.toFixed(4)} USDT`} tone="text-mist-400" />
         </div>
 
+        <TakeProfitPlan signal={signal} quantity={qty} unit={tk.unit || symbol.replace("USDT", "")} attachedTarget={signal.take_profit} />
+        {stopWarning && <p role="note" className="sp-risk-advisory mb-3">{formatOrderWarning(stopWarning, isRTL)}</p>}
         {overFree && <p className="text-[11px] text-down mb-2">⚠️ {t("bx_over_available")}</p>}
         {err && <p className="text-xs text-down bg-down/10 border border-down/30 rounded-lg px-3 py-2 mb-2">⚠️ {err}</p>}
         {marginModeError && !keepAccountMarginMode && (

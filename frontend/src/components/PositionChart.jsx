@@ -1,3 +1,4 @@
+import { analysisTargetLevels, chartPriceFormat } from "../lib/takeProfitPlan.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createChart, CrosshairMode, LineStyle } from "lightweight-charts";
 import { bitunixApi, marketApi } from "../api/client.js";
@@ -267,6 +268,7 @@ export function PositionChart({
   useEffect(() => {
     const series = seriesRef.current;
     if (!series || !candles) return;
+    series.applyOptions({ priceFormat: chartPriceFormat(candles[candles.length - 1]?.close) });
 
     const bars = candles.map((c) => ({
       time: c.time, open: c.open, high: c.high, low: c.low, close: c.close,
@@ -346,7 +348,7 @@ export function PositionChart({
       ["VAL (estimate)", a.volume_profile?.val, "#5e9fe8"],
     ];
     if (a.signal !== "wait") rows.push(["Signal entry", a.entry, "#eac26b"],
-      ["Signal SL", a.stop_loss, "#e97366"], ["Signal TP", a.take_profit, "#72bc8f"]);
+      ["Signal SL", a.stop_loss, "#e97366"], ...analysisTargetLevels(a));
     return rows.filter(([, v]) => v != null && Number.isFinite(Number(v)) && Number(v) > 0);
   }, [matchingAnalysis]);
   useEffect(() => {
@@ -465,6 +467,9 @@ export function PositionChart({
       {analysisMode && <div className="text-sm text-mist-300 space-y-2">
         <p>{source || "Market data"} · {symbol} · {tf}</p>
         {!matchingAnalysis && <p>{t("analysis_levels_hint")}</p>}
+        {analysisTargetLevels(matchingAnalysis).length > 1 && <div className="flex flex-wrap gap-2" data-chart-tp-legend aria-label="Take-profit levels">
+          {analysisTargetLevels(matchingAnalysis).map(([title,price])=><span key={title} className="rounded border border-up/30 px-2 py-1 text-up tnum text-xs">{title} · {fmtPrice(price)}</span>)}
+        </div>}
         {analysisLevels.length > 0 && <details>
           <summary className="cursor-pointer py-2">{t("analysis_levels")}</summary>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-2">

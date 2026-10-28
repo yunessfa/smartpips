@@ -192,7 +192,7 @@ export default function Logs() {
             </div>
           )}
 
-          {!err && loading && <Spinner label="\u2026" />}
+          {!err && loading && <Spinner label="…" />}
 
           {!err && !loading && !rows.length && (
             <p className="text-xs text-mist-500">{t("logs_empty")}</p>

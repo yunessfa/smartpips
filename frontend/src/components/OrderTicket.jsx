@@ -1,3 +1,5 @@
+import { TakeProfitPlan } from "./TakeProfitPlan.jsx";
+import { formatOrderWarning } from "../lib/orderRisk.js";
 import { useEffect, useState } from "react";
 import { useI18n } from "../i18n/index.jsx";
 import { fmtPrice } from "../lib/num.js";
@@ -19,7 +21,7 @@ function useNow(ms = 1000) {
 }
 
 export function OrderTicket({ ai, livePrice, onExecute, demoBalance }) {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
   const now = useNow();
   const [placing, setPlacing] = useState(false);
   const [choice, setChoice] = useState(false);   // execution mode chooser
@@ -95,6 +97,7 @@ export function OrderTicket({ ai, livePrice, onExecute, demoBalance }) {
         <Row label={`${t("est_liquidation")} *`} tone="text-down">{fmtPrice(tk.est_liquidation)}</Row>
       )}
 
+      <TakeProfitPlan signal={ai} quantity={tk.quantity} unit={tk.unit} />
       {!choice ? (
         <button
           onClick={() => (isCrypto ? setChoice(true) : onExecute())}
@@ -129,9 +132,7 @@ export function OrderTicket({ ai, livePrice, onExecute, demoBalance }) {
 
       {result?.warnings?.length > 0 && <div role="status" className="sp-risk-advisory mt-3">
         {result.warnings.map((warning) => <p key={warning.code}>
-          {warning.code === "leverage_above_recommended"
-            ? `${t("bx_leverage")}: ${warning.leverage}× / ${warning.recommended_max}× — ${t("leverage_advisory")}`
-            : warning.message}
+          {formatOrderWarning(warning, isRTL)}
         </p>)}
       </div>}
       {modalMode && (

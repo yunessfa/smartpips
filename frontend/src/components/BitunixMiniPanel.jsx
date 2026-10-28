@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Badge, Spinner } from "./ui.jsx";
 import { bitunixApi } from "../api/client.js";
@@ -203,9 +204,9 @@ export function BitunixMiniPanel({ refreshKey, demoBalance }) {
         <p className="text-xs text-mist-500">{t("bx_no_positions")}</p>
       )}
 
-      <a href="/bitunix" className="inline-block text-[11px] text-gold-soft hover:underline">
+      <Link to="/app/bitunix" className="inline-block text-[11px] text-gold-soft hover:underline">
         {t("bx_full_panel")} ←
-      </a>
+      </Link>
     </div>
   );
 }

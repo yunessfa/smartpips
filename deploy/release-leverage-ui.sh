@@ -20,7 +20,23 @@ assert container['State']['Running'], 'STOP: backend must be running before this
 assert container['Config']['Labels']['com.docker.compose.project'] == 'smartpips', 'STOP: unexpected Compose project'
 env = dict(x.split('=',1) for x in container['Config']['Env'] if '=' in x)
 key = config['services']['backend']['environment'].get('DJANGO_SECRET_KEY')
-assert key and key == env.get('DJANGO_SECRET_KEY'), 'STOP: SECRET_KEY differs from running backend; no deployment performed'
+# Compare actual container environments, not config's rendered dollar escaping.
+assert env.get('DJANGO_SECRET_KEY'), 'STOP: running secret is unavailable'
+probe_code = (
+    "import os,sys; expected=sys.stdin.read(); "
+    "sys.exit(0 if os.environ.get('DJANGO_SECRET_KEY') == expected else 42)"
+)
+probe = subprocess.run(
+    ['docker','compose','-p','smartpips',
+     '-f','docker-compose.yml','-f','docker-compose.demo.yml',
+     'run','--rm','--no-deps','--pull','never','-T',
+     '--entrypoint','python','backend','-c',probe_code],
+    input=env['DJANGO_SECRET_KEY'], capture_output=True, text=True,
+)
+assert probe.returncode == 0, (
+    'STOP: actual Compose environment key check failed; no deployment performed. '
+    'Probe exit code: ' + str(probe.returncode)
+)
 assert config['services']['backend']['environment'].get('POSTGRES_HOST') == 'smartpips-postgres', 'STOP: unexpected database host'
 print('CONFIG_AND_RUNNING_SECRET_MATCH')
 PY

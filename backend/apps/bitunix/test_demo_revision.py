@@ -26,7 +26,8 @@ class DemoRevisionTests(TestCase):
 
     def test_risk_and_leverage_caps(self):
         r=assess(self.user,**{**self.kw,"qty":20,"leverage":125})
-        self.assertIn("demo_trade_risk_cap",r["errors"])
+        self.assertIn("demo_trade_risk_cap", [w["code"] for w in r["warnings"]])
+        self.assertIn("stop_too_close_to_or_beyond_estimated_liquidation", r["errors"])
         self.assertNotIn("demo_leverage_cap",r["errors"])
         self.assertEqual(r["warnings"][0]["code"], "leverage_above_recommended")
         self.assertLess(r["suggested_qty"],5)
@@ -44,12 +45,12 @@ class DemoRevisionTests(TestCase):
         self.assertTrue(assess(self.user,**self.kw)["allowed"])
 
     @patch("apps.bitunix.views.BitunixClient.last_price",return_value=100)
-    def test_api_enforces_demo_not_just_ui(self, lp):
+    def test_api_stop_budget_is_advisory(self, lp):
         r=self.api.post("/api/bitunix/order/",{"mode":"demo","symbol":"BTCUSDT",
             "side":"BUY","qty":10,"leverage":50,"slPrice":99,"demoBalance":1000},format="json")
-        self.assertEqual(r.status_code,400)
-        self.assertEqual(r.data["code"],"demo_risk_blocked")
-        self.assertFalse(DemoPosition.objects.exists())
+        self.assertEqual(r.status_code,200,r.data)
+        self.assertIn("demo_trade_risk_cap", [w["code"] for w in r.data["warnings"]])
+        self.assertTrue(DemoPosition.objects.exists())
 
     @patch("apps.bitunix.views.BitunixClient.last_price",return_value=100)
     def test_valid_demo_creates_margin_mirror(self, lp):

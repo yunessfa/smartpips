@@ -28,7 +28,7 @@ import { useI18n } from "../i18n/index.jsx";
 
 const EMPTY = { username: "", email: "", password: "", is_admin: false };
 const DEFAULT_ACCESS = { metals: true, spot: true, futures: true };
-const MARKETS = [["metals", "\U0001f947"], ["spot", "\U0001f4b0"], ["futures", "\u26a1"]];
+const MARKETS = [["metals", "🥇"], ["spot", "💰"], ["futures", "\u26a1"]];
 
 export default function Admin() {
   const { t } = useI18n();
@@ -140,7 +140,7 @@ export default function Admin() {
       </button>
       {amSuper && (
         <button onClick={() => setCredUser(u)} className="text-xs text-mist-300 hover:text-mist-100 underline">
-          \U0001f511 {t("u_credentials")}
+          🔑 {t("u_credentials")}
         </button>
       )}
       <button onClick={() => remove(u)} className="text-xs text-down hover:underline">
@@ -166,7 +166,7 @@ export default function Admin() {
 
           {err && <p className="text-down text-xs mb-3 break-words">{err}</p>}
 
-          {loading ? <Spinner label="\u2026" /> : !shown.length ? (
+          {loading ? <Spinner label="…" /> : !shown.length ? (
             <p className="text-xs text-mist-500">{t("u_none")}</p>
           ) : (
             <>
@@ -178,8 +178,8 @@ export default function Admin() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-mist-100 break-all">
                           {u.username}
-                          {u.is_superuser && <span className="ms-1 text-gold" title="super admin">\u2605\u2605</span>}
-                          {!u.is_superuser && u.is_admin && <span className="ms-1 text-gold-soft">\u2605</span>}
+                          {u.is_superuser && <span className="ms-1 text-gold" title="super admin">{t("u_admin")} · Super</span>}
+                          {!u.is_superuser && u.is_admin && <span className="ms-1 text-gold-soft">{t("u_admin")}</span>}
                         </p>
                         <p className="text-xs text-mist-500 break-all">{u.email || "\u2014"}</p>
                       </div>
@@ -225,8 +225,8 @@ export default function Admin() {
                         <td className="py-2.5 px-2"><ActiveDot u={u} /></td>
                         {/* was rendering the risk button here \u2014 wrong column */}
                         <td className="py-2.5 px-2">
-                          {u.is_superuser ? <span className="text-gold" title="super admin">\u2605\u2605</span>
-                            : u.is_admin ? <span className="text-gold-soft">\u2605</span> : "\u2014"}
+                          {u.is_superuser ? <span className="text-gold" title="super admin">{t("u_admin")} · Super</span>
+                            : u.is_admin ? <span className="text-gold-soft">{t("u_admin")}</span> : "\u2014"}
                         </td>
                         <td className="py-2.5 px-2"><MarketToggles u={u} /></td>
                         <td className="py-2.5 px-2"><RiskButton u={u} /></td>
@@ -352,7 +352,7 @@ function CredentialsEditor({ user, onClose, onDone }) {
       <div className="bg-ink-700 border border-ink-500 rounded-xl p-5 w-full max-w-md my-auto max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}>
         <h3 className="text-sm font-semibold text-mist-100">
-          {t("u_credentials")} \u00b7 <span className="break-all">{user.username}</span>
+          {t("u_credentials")} · <span className="break-all">{user.username}</span>
         </h3>
         <p className="mt-1 text-[11px] leading-relaxed text-mist-500">{t("u_creds_hint")}</p>
 
@@ -457,7 +457,7 @@ function RegistrationPanel() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm">
-            <span className={on ? "text-up" : "text-down"}>\u25cf</span>
+            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${on ? "bg-up" : "bg-down"}`} aria-hidden="true" />
             <span className="text-mist-200">
               {settings === null ? "\u2026" : on ? t("reg_on") : t("reg_off")}
             </span>
@@ -506,9 +506,9 @@ function CTraderPanel() {
     <Panel title={t("ctrader")} className="min-w-0">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2 text-sm min-w-0">
-          <span className={connected ? "text-up" : "text-mist-500"}>\u25cf</span>
+          <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${connected ? "bg-up" : "bg-ink-400"}`} aria-hidden="true" />
           <span className="text-mist-200">{connected ? t("ctrader_connected") : t("ctrader_disconnected")}</span>
-          {st?.account_id && <span className="text-xs text-mist-500 truncate">\u00b7 {t("ctrader_account")} {st.account_id}</span>}
+          {st?.account_id && <span className="text-xs text-mist-500 truncate">· {t("ctrader_account")} {st.account_id}</span>}
         </div>
         <Button onClick={connect} disabled={busy} className="w-full sm:w-auto">
           {busy ? "\u2026" : t("ctrader_connect_btn")}

@@ -1,3 +1,4 @@
+import { TakeProfitPlan } from "./TakeProfitPlan.jsx";
 import { useState } from "react";
 import { Button, Field, Input, Select } from "./ui.jsx";
 import { useI18n } from "../i18n/index.jsx";
@@ -82,17 +83,7 @@ export function LogTradeModal({ initial, onClose, onSaved }) {
           <Field label={t("stop_loss")}><Input type="number" value={form.stop_loss} onChange={(e) => set("stop_loss", e.target.value)} /></Field>
           <Field label={t("leverage")}><Input type="number" min={1} value={form.leverage} onChange={(e) => set("leverage", e.target.value)} /></Field>
         </div>
-        {form.tp_levels && form.tp_levels.length === 3 && (
-          <div className="text-xs bg-ink-800 border border-ink-500 rounded-lg px-3 py-2 space-y-1">
-            <p className="text-mist-400 mb-1">🎯 {t("tp_plan_3level")}</p>
-            {form.tp_levels.map((lv, i) => (
-              <div key={i} className="flex justify-between text-mist-300">
-                <span>TP{i + 1} · {lv.pct}% {t("of_position")}</span>
-                <span className="tnum">{lv.price} <span className="text-mist-500">({lv.r}R)</span></span>
-              </div>
-            ))}
-          </div>
-        )}
+        <TakeProfitPlan signal={form} execution="journal" />
         {isCrypto && form.quantity && (
           <p className="text-xs text-mist-400 bg-ink-800 border border-ink-500 rounded-lg px-3 py-2">
             📊 {t("suggested")}: <span className="text-mist-100 font-semibold">{form.quantity} {initial?.unit}</span>

@@ -6,7 +6,7 @@ from .models import DemoPosition, FEE_RATE
 PROFILE = {"name": "demo-conservative-v1", "risk_per_trade_pct": .5,
            "max_daily_loss_pct": 2, "max_leverage": 10,
            "max_open_positions": 3, "max_total_stop_risk_pct": 1.5,
-           "liquidation_buffer_fraction": .8}
+           "liquidation_buffer_fraction": .8, "stop_risk_policy": "warning_only"}
 
 
 def assess(user, *, balance, entry, stop, qty, leverage, side):
@@ -28,7 +28,12 @@ def assess(user, *, balance, entry, stop, qty, leverage, side):
     suggested_qty = budget / loss_per_coin
     proposed = qty * loss_per_coin
     if proposed > budget * 1.001:
-        errors.append("demo_trade_risk_cap")
+        warnings.append({"code": "demo_trade_risk_cap", "severity": "warning",
+                         "estimated_risk_usdt": proposed,
+                         "estimated_risk_pct": proposed / balance * 100,
+                         "recommended_max_pct": PROFILE["risk_per_trade_pct"],
+                         "recommended_max_usdt": budget,
+                         "message": "Estimated demo stop loss exceeds the per-trade recommendation; this warning does not block the order."})
     if abs(entry-stop)/entry * leverage > .95 * PROFILE["liquidation_buffer_fraction"]:
         errors.append("stop_too_close_to_or_beyond_estimated_liquidation")
     open_positions = list(DemoPosition.objects.filter(user=user, closed_at__isnull=True))
@@ -41,7 +46,12 @@ def assess(user, *, balance, entry, stop, qty, leverage, side):
             continue
         existing_risk += p.qty * (abs(p.entry_price-p.sl_price) + (p.entry_price+p.sl_price)*FEE_RATE)
     if existing_risk+proposed > balance*PROFILE["max_total_stop_risk_pct"]/100 * 1.001:
-        errors.append("demo_total_stop_risk_cap")
+        warnings.append({"code": "demo_total_stop_risk_cap", "severity": "warning",
+                         "estimated_risk_usdt": existing_risk + proposed,
+                         "estimated_risk_pct": (existing_risk + proposed) / balance * 100,
+                         "recommended_max_pct": PROFILE["max_total_stop_risk_pct"],
+                         "recommended_max_usdt": balance * PROFILE["max_total_stop_risk_pct"] / 100,
+                         "message": "Estimated total demo stop risk exceeds the open-risk recommendation; this warning does not block the order."})
     start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
     # Gross historical demo PnL is conservative only after estimated fees.
     day_net = sum((p.gross_pnl(p.close_price) or 0)-p.round_trip_fee(p.close_price)

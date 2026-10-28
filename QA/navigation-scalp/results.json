@@ -1,0 +1,28 @@
+{
+  "fixtureOnly": true,
+  "nonLocalNetworkBlocked": true,
+  "simulatedOrders": 2,
+  "errors": [],
+  "checks": [
+    {
+      "width": 390,
+      "shellRetainedDuringSlowRoute": true,
+      "previousPageRetainedDuringLoad": true,
+      "internalDocumentRequests": 0,
+      "chartLabels": 3,
+      "orderSlices": 3,
+      "attachedSingleTpPreserved": 0.962336,
+      "rawEscapeText": false
+    },
+    {
+      "width": 1440,
+      "shellRetainedDuringSlowRoute": true,
+      "previousPageRetainedDuringLoad": true,
+      "internalDocumentRequests": 0,
+      "chartLabels": 3,
+      "orderSlices": 3,
+      "attachedSingleTpPreserved": 0.962336,
+      "rawEscapeText": false
+    }
+  ]
+}
