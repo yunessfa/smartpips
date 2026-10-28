@@ -1,0 +1,31 @@
+Compared against smartpips-login-backtest-final.zip
+Historical migrations unchanged: 44 files
+Chart heights, chart files, authentication and position-alert rules unchanged.
+Only new schema: alerts.0004_usersignalstate
+
+FIX-ALERTS-DIAGNOSTICS-FA.md
+QA/alerts-backend-tests.log
+QA/alerts-browser-test.json
+QA/alerts-build.log
+QA/alerts-engine-invariance.json
+QA/alerts-frontend-tests.log
+QA/alerts-migration-smoke.log
+QA/alerts-migration-smoke.py
+QA/alerts-public-snapshot-diagnostics.json
+QA/alerts-reasons-desktop-fixture.png
+QA/alerts-reasons-mobile-fixture.png
+QA/alerts-reasons-modal-fixture.png
+backend/apps/alerts/management/commands/monitor_scalp.py
+backend/apps/alerts/management/commands/prepare_alerts.py
+backend/apps/alerts/migrations/0004_usersignalstate.py
+backend/apps/alerts/models.py
+backend/apps/alerts/signal_check.py
+backend/apps/alerts/test_signal_pipeline.py
+backend/apps/strategy/backtest.py
+backend/apps/strategy/engine.py
+backend/apps/strategy/test_wait_diagnostics.py
+deploy/release-alerts-diagnostics-fix.sh
+frontend/src/components/BacktestReasons.jsx
+frontend/src/i18n/translations.js
+frontend/src/pages/Scalp.jsx
+frontend/src/pages/Strategies.jsx

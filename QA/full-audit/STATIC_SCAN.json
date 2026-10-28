@@ -1,0 +1,854 @@
+[
+  {
+    "file": "backend/apps/accounts/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      17
+    ]
+  },
+  {
+    "file": "backend/apps/accounts/migrations/0002_systemsetting.py",
+    "check": "schema_operation",
+    "lines": [
+      14
+    ]
+  },
+  {
+    "file": "backend/apps/accounts/migrations/0004_refreshsession.py",
+    "check": "schema_operation",
+    "lines": [
+      16
+    ]
+  },
+  {
+    "file": "backend/apps/accounts/views.py",
+    "check": "public_permission",
+    "lines": [
+      102,
+      138,
+      160,
+      204
+    ]
+  },
+  {
+    "file": "backend/apps/ai/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      14
+    ]
+  },
+  {
+    "file": "backend/apps/ai/providers.py",
+    "check": "direct_network",
+    "lines": [
+      67
+    ]
+  },
+  {
+    "file": "backend/apps/alerts/gating.py",
+    "check": "swallowed_exception",
+    "lines": [
+      162
+    ]
+  },
+  {
+    "file": "backend/apps/alerts/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      31,
+      47,
+      60
+    ]
+  },
+  {
+    "file": "backend/apps/alerts/migrations/0002_notification_alertrule.py",
+    "check": "schema_operation",
+    "lines": [
+      21,
+      62,
+      97
+    ]
+  },
+  {
+    "file": "backend/apps/alerts/migrations/0004_usersignalstate.py",
+    "check": "schema_operation",
+    "lines": [
+      11
+    ]
+  },
+  {
+    "file": "backend/apps/alerts/push.py",
+    "check": "swallowed_exception",
+    "lines": [
+      37
+    ]
+  },
+  {
+    "file": "backend/apps/bitunix/client.py",
+    "check": "direct_network",
+    "lines": [
+      90
+    ]
+  },
+  {
+    "file": "backend/apps/bitunix/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      12
+    ]
+  },
+  {
+    "file": "backend/apps/bitunix/migrations/0002_demoposition_journal_trade_id.py",
+    "check": "schema_operation",
+    "lines": [
+      7
+    ]
+  },
+  {
+    "file": "backend/apps/bitunix/views.py",
+    "check": "swallowed_exception",
+    "lines": [
+      405
+    ]
+  },
+  {
+    "file": "backend/apps/chat/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      17,
+      30
+    ]
+  },
+  {
+    "file": "backend/apps/chat/scalp.py",
+    "check": "swallowed_exception",
+    "lines": [
+      72
+    ]
+  },
+  {
+    "file": "backend/apps/chat/services.py",
+    "check": "swallowed_exception",
+    "lines": [
+      148
+    ]
+  },
+  {
+    "file": "backend/apps/chat/views.py",
+    "check": "swallowed_exception",
+    "lines": [
+      75,
+      100,
+      224
+    ]
+  },
+  {
+    "file": "backend/apps/ctrader/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      14
+    ]
+  },
+  {
+    "file": "backend/apps/ctrader/views.py",
+    "check": "public_permission",
+    "lines": [
+      45,
+      139,
+      165
+    ]
+  },
+  {
+    "file": "backend/apps/ctrader/views.py",
+    "check": "direct_network",
+    "lines": [
+      53,
+      103
+    ]
+  },
+  {
+    "file": "backend/apps/lbank/client.py",
+    "check": "direct_network",
+    "lines": [
+      114,
+      339,
+      405
+    ]
+  },
+  {
+    "file": "backend/apps/lbank/metals.py",
+    "check": "direct_network",
+    "lines": [
+      92
+    ]
+  },
+  {
+    "file": "backend/apps/market/calendar_guard.py",
+    "check": "direct_network",
+    "lines": [
+      18
+    ]
+  },
+  {
+    "file": "backend/apps/market/candles.py",
+    "check": "swallowed_exception",
+    "lines": [
+      79,
+      242,
+      254,
+      411,
+      453
+    ]
+  },
+  {
+    "file": "backend/apps/market/candles.py",
+    "check": "direct_network",
+    "lines": [
+      157,
+      304,
+      415
+    ]
+  },
+  {
+    "file": "backend/apps/market/management/commands/check_feeds.py",
+    "check": "swallowed_exception",
+    "lines": [
+      334
+    ]
+  },
+  {
+    "file": "backend/apps/market/metals.py",
+    "check": "direct_network",
+    "lines": [
+      69,
+      85
+    ]
+  },
+  {
+    "file": "backend/apps/market/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      14
+    ]
+  },
+  {
+    "file": "backend/apps/market/quotes_resolver.py",
+    "check": "direct_network",
+    "lines": [
+      55
+    ]
+  },
+  {
+    "file": "backend/apps/market/services.py",
+    "check": "direct_network",
+    "lines": [
+      32
+    ]
+  },
+  {
+    "file": "backend/apps/market/views.py",
+    "check": "swallowed_exception",
+    "lines": [
+      59
+    ]
+  },
+  {
+    "file": "backend/apps/market/views.py",
+    "check": "direct_network",
+    "lines": [
+      39
+    ]
+  },
+  {
+    "file": "backend/apps/mt5/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      17,
+      35,
+      46,
+      59
+    ]
+  },
+  {
+    "file": "backend/apps/mt5/migrations/0002_mt5tick.py",
+    "check": "schema_operation",
+    "lines": [
+      13
+    ]
+  },
+  {
+    "file": "backend/apps/mt5/views.py",
+    "check": "public_permission",
+    "lines": [
+      22,
+      82,
+      102
+    ]
+  },
+  {
+    "file": "backend/apps/prefs/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      10
+    ]
+  },
+  {
+    "file": "backend/apps/prefs/migrations/0002_risklimits.py",
+    "check": "schema_operation",
+    "lines": [
+      12
+    ]
+  },
+  {
+    "file": "backend/apps/sources/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      14
+    ]
+  },
+  {
+    "file": "backend/apps/sources/sentiment.py",
+    "check": "direct_network",
+    "lines": [
+      63
+    ]
+  },
+  {
+    "file": "backend/apps/sources/services.py",
+    "check": "direct_network",
+    "lines": [
+      67
+    ]
+  },
+  {
+    "file": "backend/apps/strategy/decision.py",
+    "check": "swallowed_exception",
+    "lines": [
+      105,
+      152,
+      232
+    ]
+  },
+  {
+    "file": "backend/apps/strategy/engine.py",
+    "check": "swallowed_exception",
+    "lines": [
+      492
+    ]
+  },
+  {
+    "file": "backend/apps/strategy/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      14,
+      29
+    ]
+  },
+  {
+    "file": "backend/apps/strategy/migrations/0002_strategy_config.py",
+    "check": "schema_operation",
+    "lines": [
+      14,
+      41
+    ]
+  },
+  {
+    "file": "backend/apps/strategy/rule_schema.py",
+    "check": "dynamic_code",
+    "lines": [
+      6
+    ]
+  },
+  {
+    "file": "backend/apps/strategy/services.py",
+    "check": "direct_network",
+    "lines": [
+      32
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0001_initial.py",
+    "check": "schema_operation",
+    "lines": [
+      17
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0002_fix_bitunix_mirror_size.py",
+    "check": "schema_operation",
+    "lines": [
+      29
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0002_trade_setup_class.py",
+    "check": "schema_operation",
+    "lines": [
+      13
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0003_trade_quantity.py",
+    "check": "schema_operation",
+    "lines": [
+      13
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0003_trade_strategy_attribution.py",
+    "check": "schema_operation",
+    "lines": [
+      18,
+      26,
+      31,
+      36,
+      41,
+      46
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0004_remove_trade_quantity.py",
+    "check": "schema_operation",
+    "lines": [
+      13
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0005_trade_realized_pnl_trade_remaining_pct_and_more.py",
+    "check": "schema_operation",
+    "lines": [
+      13,
+      18,
+      23,
+      28,
+      33,
+      38,
+      43,
+      48,
+      53,
+      58,
+      63
+    ]
+  },
+  {
+    "file": "backend/apps/trades/migrations/0008_accounting_provenance.py",
+    "check": "schema_operation",
+    "lines": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ]
+  },
+  {
+    "file": "backend/apps/trades/views.py",
+    "check": "swallowed_exception",
+    "lines": [
+      40
+    ]
+  },
+  {
+    "file": "backend/config/health.py",
+    "check": "public_permission",
+    "lines": [
+      63
+    ]
+  },
+  {
+    "file": "backend/repair_trades.py",
+    "check": "swallowed_exception",
+    "lines": [
+      18
+    ]
+  },
+  {
+    "file": "frontend/src/components/BitunixMiniPanel.jsx",
+    "check": "motion_timer",
+    "lines": [
+      45
+    ]
+  },
+  {
+    "file": "frontend/src/components/EconomicNewsPanel.jsx",
+    "check": "motion_timer",
+    "lines": [
+      22,
+      23
+    ]
+  },
+  {
+    "file": "frontend/src/components/Layout.jsx",
+    "check": "motion_timer",
+    "lines": [
+      42,
+      75
+    ]
+  },
+  {
+    "file": "frontend/src/components/OrderBook.jsx",
+    "check": "motion_timer",
+    "lines": [
+      46
+    ]
+  },
+  {
+    "file": "frontend/src/components/OrderTicket.jsx",
+    "check": "motion_timer",
+    "lines": [
+      14
+    ]
+  },
+  {
+    "file": "frontend/src/components/PositionChart.jsx",
+    "check": "motion_timer",
+    "lines": [
+      177,
+      213
+    ]
+  },
+  {
+    "file": "frontend/src/components/PositionsPanel.jsx",
+    "check": "motion_timer",
+    "lines": [
+      83,
+      113,
+      134
+    ]
+  },
+  {
+    "file": "frontend/src/index.css",
+    "check": "reduced_motion",
+    "lines": [
+      52
+    ]
+  },
+  {
+    "file": "frontend/src/live/LivePrices.jsx",
+    "check": "motion_timer",
+    "lines": [
+      125,
+      168,
+      212
+    ]
+  },
+  {
+    "file": "frontend/src/live/useMetalTick.js",
+    "check": "motion_timer",
+    "lines": [
+      82
+    ]
+  },
+  {
+    "file": "frontend/src/live/useVisibleInterval.js",
+    "check": "motion_timer",
+    "lines": [
+      4,
+      22
+    ]
+  },
+  {
+    "file": "frontend/src/pages/Bitunix.jsx",
+    "check": "motion_timer",
+    "lines": [
+      58
+    ]
+  },
+  {
+    "file": "frontend/src/pages/Chat.jsx",
+    "check": "motion_timer",
+    "lines": [
+      214
+    ]
+  },
+  {
+    "file": "frontend/src/pages/Dashboard.jsx",
+    "check": "motion_timer",
+    "lines": [
+      56
+    ]
+  },
+  {
+    "file": "frontend/src/pages/Login.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      3,
+      34
+    ]
+  },
+  {
+    "file": "frontend/src/pages/Logs.jsx",
+    "check": "motion_timer",
+    "lines": [
+      86
+    ]
+  },
+  {
+    "file": "frontend/src/pages/Scalp.jsx",
+    "check": "motion_timer",
+    "lines": [
+      86,
+      325
+    ]
+  },
+  {
+    "file": "frontend/src/site/SiteLayout.jsx",
+    "check": "motion_timer",
+    "lines": [
+      61
+    ]
+  },
+  {
+    "file": "frontend/src/site/SiteLayout.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      3,
+      105
+    ]
+  },
+  {
+    "file": "frontend/src/site/motion.jsx",
+    "check": "motion_timer",
+    "lines": [
+      186,
+      188,
+      288
+    ]
+  },
+  {
+    "file": "frontend/src/site/motion.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      5,
+      20,
+      43,
+      61,
+      81,
+      113,
+      174,
+      211,
+      234,
+      277,
+      341
+    ]
+  },
+  {
+    "file": "frontend/src/site/pages/Landing.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      1,
+      130,
+      487
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/AIBrain.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      112
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/AuthAside.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      1,
+      55
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/CTABackdrop.jsx",
+    "check": "motion_timer",
+    "lines": [
+      86,
+      92
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/CTABackdrop.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      17
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/DashboardMockup.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      54
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/EngineCore.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      33
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/HeroChart.jsx",
+    "check": "motion_timer",
+    "lines": [
+      274,
+      276
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/HeroChart.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      50
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/HeroVisual.jsx",
+    "check": "motion_timer",
+    "lines": [
+      350,
+      360
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/HeroVisual.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      21,
+      59
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/LayerChart.jsx",
+    "check": "motion_timer",
+    "lines": [
+      187,
+      189
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/LayerChart.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      36
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/NoiseToSignal.jsx",
+    "check": "motion_timer",
+    "lines": [
+      99,
+      107,
+      226,
+      232
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/NoiseToSignal.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      28,
+      125
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/RawIntel.jsx",
+    "check": "motion_timer",
+    "lines": [
+      117,
+      119,
+      228,
+      230
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/RawIntel.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      36,
+      137,
+      252
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/RegimeSim.jsx",
+    "check": "motion_timer",
+    "lines": [
+      150,
+      152
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/RegimeSim.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      33
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/ScalpReplay.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      39
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/ScalpSequence.jsx",
+    "check": "motion_timer",
+    "lines": [
+      190,
+      192
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/ScalpSequence.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      48
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/SmartExit.jsx",
+    "check": "motion_timer",
+    "lines": [
+      44
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/SmartExit.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      37
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/SmartExitLive.jsx",
+    "check": "motion_timer",
+    "lines": [
+      67,
+      145,
+      147
+    ]
+  },
+  {
+    "file": "frontend/src/site/visuals/SmartExitLive.jsx",
+    "check": "reduced_motion",
+    "lines": [
+      2,
+      57
+    ]
+  }
+]

@@ -1,0 +1,62 @@
+{
+  "errors": [],
+  "authStatuses": [
+    {
+      "path": "/api/auth/login/",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me/",
+      "status": 401
+    },
+    {
+      "path": "/api/auth/refresh/",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/refresh/",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/me/",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/logout/",
+      "status": 401
+    },
+    {
+      "path": "/api/auth/refresh/",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/refresh/",
+      "status": 200
+    },
+    {
+      "path": "/api/auth/logout/",
+      "status": 204
+    }
+  ],
+  "charts": {
+    "top": [
+      {
+        "height": "380px",
+        "parentHeight": "80%"
+      }
+    ],
+    "canvasHeight": "100%",
+    "width": 1440,
+    "scrollWidth": 1440
+  },
+  "desktopLogin": "pass",
+  "realAccessExpiryRefresh": "pass",
+  "mobileLoginAndRefresh": "pass",
+  "deviceIsolation": "pass",
+  "sameSnapshotExplanation": "pass",
+  "autoPollExplanation": "pass",
+  "backtestDiagnostics": "pass",
+  "heightsRestored": "pass",
+  "signalCount": 2,
+  "explainCount": 1
+}

@@ -1,0 +1,16 @@
+{
+  "name": "SmartPips — AI Trading Assistant",
+  "short_name": "SmartPips",
+  "description": "AI-assisted trading analysis, scalp signals and alerts.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B0E14",
+  "theme_color": "#0B0E14",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    { "src": "/logo-icon.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/logo-icon.png", "sizes": "256x256", "type": "image/png", "purpose": "maskable" }
+  ]
+}

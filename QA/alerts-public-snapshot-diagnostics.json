@@ -1,0 +1,29 @@
+{
+  "source": "Previously captured PUBLIC Bitunix 5m snapshot; not user account, not user reported 1m run",
+  "received": 500,
+  "used": 74,
+  "trades": 0,
+  "diagnostics": {
+    "bars_evaluated": 13,
+    "base_engine_wait": 13,
+    "strategy_veto": 0,
+    "invalid_plan": 0,
+    "unfillable_entry": 0,
+    "base_wait_reasons": {
+      "quiet_market": {
+        "count": 7,
+        "example": "market too quiet to scalp (low volatility)"
+      },
+      "low_score": {
+        "count": 13,
+        "example": "confluence score 37 below 60 (New York session)"
+      },
+      "weak_conviction": {
+        "count": 4,
+        "example": "weak conviction 20% (both directions close) \u2014 need 42%"
+      }
+    },
+    "strategy_veto_reasons": {}
+  },
+  "profitability_validated": false
+}
