@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/Layout.jsx";
 import { Panel, Badge, Spinner, Button } from "../components/ui.jsx";
-import { AdvancedChart, TickerTape } from "../components/TradingView.jsx";
+import { TickerTape } from "../components/TradingView.jsx";
+import FuturesOverview from "../components/FuturesOverview.jsx";
 import { PositionChart, toBitunixSymbol } from "../components/PositionChart.jsx";
 import { marketApi } from "../api/client.js";
 import { useI18n } from "../i18n/index.jsx";
@@ -24,10 +25,6 @@ function fmt(n) {
   return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
 }
 
-// The chart is deliberately indicator-free. Module-level const so the widget
-// config keeps the same identity between renders — a fresh [] on every render
-// would change the config and remount the TradingView iframe on each tick.
-const NO_STUDIES = [];
 
 export default function Dashboard() {
   const { t } = useI18n();
@@ -42,7 +39,8 @@ export default function Dashboard() {
       const data = await marketApi.quotes();
       setQuotes(data);
       setUpdatedAt(new Date());
-      setSelected((cur) => cur || data[0] || null);
+      // crypto futures first: they are the product focus
+      setSelected((cur) => cur || data.find((q) => isCryptoSymbol(q.symbol)) || data[0] || null);
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -107,39 +105,35 @@ export default function Dashboard() {
             <Stat label={t("tracked_assets")} value={quotes.length} />
             <Stat label={t("advancing")} value={totalUp} tone="up" />
             <Stat label={t("declining")} value={totalDown} tone="down" />
-            <Stat label={t("ask_assistant")} value={<Link to="/app/chat" className="text-gold-soft hover:underline">{t("open")} →</Link>} />
+            <Stat label={t("dash_scalp_link")} value={<Link to="/app/scalp" className="text-gold-soft hover:underline">{t("open")} →</Link>} />
           </div>
 
+          <FuturesOverview />
+
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* chart */}
-            <Panel
-              className="xl:col-span-2"
-              title={selected ? `${selected.name} · ${selected.symbol}` : t("chart")}
-              action={
-                selEff && (
-                  <Badge tone={selEff.change >= 0 ? "up" : "down"}>
-                    <span className="tnum">{selEff.change >= 0 ? "▲" : "▼"} {fmt(selEff.change)}%</span>
-                  </Badge>
-                )
-              }
-            >
-              {selected ? (
-                <AdvancedChart symbol={selected.tradingview_symbol} height={520}
-                  studies={NO_STUDIES} hideVolume />
-              ) : (
-                <div className="h-[520px] grid place-items-center"><Spinner label={t("loading_chart")} /></div>
-              )}
+            {/* One chart only: real exchange candles (+ your position lines when
+                you hold the displayed symbol). It follows the list selection. */}
+            <Panel className="xl:col-span-2"
+              title={selected ? `${selected.name} · ${toBitunixSymbol(selected.symbol) || selected.symbol}` : t("pc_title")}
+              action={selEff && Number.isFinite(selEff.change) && (
+                <Badge tone={selEff.change >= 0 ? "up" : "down"}>
+                  <span className="tnum" dir="ltr">{selEff.change >= 0 ? "▲" : "▼"} {fmt(selEff.change)}%</span>
+                </Badge>
+              )}>
+              <PositionChart symbol={toBitunixSymbol(selected?.symbol) || undefined}
+                height={480} storageKey="pc_tf_dash" />
             </Panel>
 
-            {/* watchlist */}
             <Panel title={t("watchlist")}>
               {loading ? (
                 <Spinner label={t("loading_quotes")} />
               ) : error ? (
                 <p className="text-down text-sm">{error}</p>
+              ) : quotes.length === 0 ? (
+                <p className="text-sm text-mist-500">{t("dash_no_quotes")}</p>
               ) : (
-                <ul className="space-y-1 max-h-[500px] overflow-y-auto">
-                  {quotes.map((q) => {
+                <ul className="space-y-1 max-h-[540px] overflow-y-auto">
+                  {[...quotes].sort((a, b) => Number(isCryptoSymbol(b.symbol)) - Number(isCryptoSymbol(a.symbol))).map((q) => {
                     const e = eff(q);
                     const up = e.change >= 0;
                     const active = selected?.symbol === q.symbol;
@@ -156,7 +150,7 @@ export default function Dashboard() {
                             </p>
                             <p className="text-xs text-mist-500 tnum">{q.symbol}</p>
                           </div>
-                          <div className="text-end">
+                          <div className="text-end" dir="ltr">
                             <p className="tnum text-sm text-mist-100">${fmt(e.price)}</p>
                             <p className={`tnum text-xs ${up ? "text-up" : "text-down"}`}>{up ? "+" : ""}{fmt(e.change)}%</p>
                           </div>
@@ -168,15 +162,6 @@ export default function Dashboard() {
               )}
             </Panel>
           </div>
-
-          {/* Position chart: real candles with Entry / TP / SL / Liq drawn on
-              top when a position exists on the displayed symbol. Follows the
-              watchlist selection for crypto; for metals (no Bitunix perp) it
-              keeps its own symbol picker instead of blanking out. */}
-          <Panel title={t("pc_title")}>
-            <PositionChart symbol={toBitunixSymbol(selected?.symbol) || undefined}
-              height={460} storageKey="pc_tf_dash" />
-          </Panel>
         </div>
       </div>
     </>

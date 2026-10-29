@@ -337,20 +337,39 @@ export function PositionChart({
 
   // Analysis must match BOTH product (spot/perp/metals) and timeframe.
   const matchingAnalysis = analysisMode && analysis?.symbol === symbol && analysis?.timeframe === tf ? analysis : null;
+  // Decluttered (2026-10): by default only the levels a trader acts on —
+  // entry/stop/target for a live setup, otherwise the EMA21 pullback level and
+  // the nearest support/resistance. Session/day levels and the OHLCV volume
+  // profile are opt-in ("more levels"): they showed no measurable edge and
+  // ten overlapping labels around price made the chart unreadable.
+  const [moreLevels, setMoreLevels] = useState(() => {
+    try { return localStorage.getItem("pc_more_levels") === "1"; } catch { return false; }
+  });
   const analysisLevels = useMemo(() => {
     if (!matchingAnalysis) return [];
     const a = matchingAnalysis;
-    const rows = [
-      ["Support", a.support, "#72bc8f"], ["Resistance", a.resistance, "#e97366"],
-      ...Object.entries(a.indicators?.KeyLevels || {}).map(([label, value]) => [label, value, "#bf8eda"]),
-      ["POC (estimate)", a.volume_profile?.poc, "#eac26b"],
-      ["VAH (estimate)", a.volume_profile?.vah, "#5e9fe8"],
-      ["VAL (estimate)", a.volume_profile?.val, "#5e9fe8"],
-    ];
-    if (a.signal !== "wait") rows.push(["Signal entry", a.entry, "#eac26b"],
-      ["Signal SL", a.stop_loss, "#e97366"], ...analysisTargetLevels(a));
-    return rows.filter(([, v]) => v != null && Number.isFinite(Number(v)) && Number(v) > 0);
-  }, [matchingAnalysis]);
+    const rows = [];
+    if (a.signal !== "wait") {
+      const targets = analysisTargetLevels(a);
+      rows.push([t("lvl_entry"), a.entry, "#eac26b"], [t("lvl_sl"), a.stop_loss, "#e97366"],
+        ...(targets.length === 1 ? [[t("lvl_tp"), targets[0][1], "#72bc8f"]] : targets));
+    } else {
+      if (a.brief?.pullback_level) rows.push([t("lvl_pullback"), a.brief.pullback_level, "#eac26b"]);
+      rows.push([t("lvl_support"), a.support, "#72bc8f"], [t("lvl_resistance"), a.resistance, "#e97366"]);
+    }
+    if (moreLevels) {
+      rows.push(...Object.entries(a.indicators?.KeyLevels || {}).map(([label, value]) => [label, value, "#bf8eda"]),
+        ["POC", a.volume_profile?.poc, "#8b95a7"], ["VAH", a.volume_profile?.vah, "#5e9fe8"],
+        ["VAL", a.volume_profile?.val, "#5e9fe8"]);
+    }
+    const clean = rows.filter(([, v]) => v != null && Number.isFinite(Number(v)) && Number(v) > 0);
+    // drop near-duplicates (labels would overlap on the axis)
+    const out = [];
+    for (const row of clean) {
+      if (!out.some(([, p]) => Math.abs(Number(p) - Number(row[1])) / Number(row[1]) < 0.0004)) out.push(row);
+    }
+    return out;
+  }, [matchingAnalysis, moreLevels, t]);
   useEffect(() => {
     const series = seriesRef.current;
     if (!series) return;
@@ -464,20 +483,24 @@ export function PositionChart({
         </div>
       )}
 
-      {analysisMode && <div className="text-sm text-mist-300 space-y-2">
-        <p>{source || "Market data"} · {symbol} · {tf}</p>
-        {!matchingAnalysis && <p>{t("analysis_levels_hint")}</p>}
-        {analysisTargetLevels(matchingAnalysis).length > 1 && <div className="flex flex-wrap gap-2" data-chart-tp-legend aria-label="Take-profit levels">
-          {analysisTargetLevels(matchingAnalysis).map(([title,price])=><span key={title} className="rounded border border-up/30 px-2 py-1 text-up tnum text-xs">{title} · {fmtPrice(price)}</span>)}
-        </div>}
-        {analysisLevels.length > 0 && <details>
-          <summary className="cursor-pointer py-2">{t("analysis_levels")}</summary>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-2">
-            {analysisLevels.map(([title, price]) => <div key={title} className="flex justify-between gap-4">
-              <dt>{title}</dt><dd className="tnum">{fmtPrice(price)}</dd>
-            </div>)}
-          </dl>
-        </details>}
+      {analysisMode && <div className="flex flex-wrap items-center gap-2 text-xs text-mist-300">
+        {!matchingAnalysis && <p className="text-mist-500">{t("analysis_levels_hint")}</p>}
+        {analysisLevels.map(([title, price, color]) => (
+          <span key={title} className="inline-flex items-center gap-1.5 rounded-md border border-ink-500 bg-ink-800 px-2 py-1">
+            <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+            <span className="text-mist-400">{title}</span>
+            <bdi dir="ltr" className="tnum font-semibold text-mist-100">{fmtPrice(price)}</bdi>
+          </span>
+        ))}
+        {matchingAnalysis && (
+          <button type="button" onClick={() => setMoreLevels((v) => {
+              try { localStorage.setItem("pc_more_levels", v ? "0" : "1"); } catch { /* ignore */ }
+              return !v;
+            })}
+            className={`ms-auto rounded-md border px-2 py-1 ${moreLevels ? "border-gold/50 text-gold-soft" : "border-ink-500 text-mist-500 hover:text-mist-300"}`}>
+            {moreLevels ? t("lvl_less") : t("lvl_more")}
+          </button>
+        )}
       </div>}
       {err && <p className="text-down text-xs">{err}</p>}
 
@@ -540,7 +563,9 @@ export function PositionChart({
         ))}
       </div>
 
-      <p className="text-[10px] text-mist-600">{t(analysisMode ? "analysis_chart_notice" : "pc_display_only")}</p>
+      {(!analysisMode || moreLevels) && (
+        <p className="text-[10px] text-mist-600">{t(analysisMode ? "analysis_chart_notice" : "pc_display_only")}</p>
+      )}
     </div>
   );
 }

@@ -25,6 +25,7 @@ account/change_leverage, account/change_margin_mode, tpsl/position/place_order.
 """
 import hashlib
 import json
+import logging
 import random
 import string
 import time
@@ -36,6 +37,8 @@ from django.conf import settings
 class BitunixError(Exception):
     """Raised with Bitunix's own code/message so callers can show it."""
 
+
+log = logging.getLogger("smartpips.bitunix")
 
 def _nonce(n=32):
     return "".join(random.choices(string.ascii_letters + string.digits, k=n))
@@ -90,12 +93,19 @@ class BitunixClient:
             r = requests.request(method, f"{self.base_url}{path}", params=params,
                                  data=body_json if body is not None else None,
                                  headers=headers, timeout=15)
+        except requests.Timeout as exc:
+            log.warning("bitunix %s %s timed out: %s", method, path, exc)
+            raise BitunixError("could not reach Bitunix: request timed out") from exc
         except requests.RequestException as exc:
-            raise BitunixError(f"could not reach Bitunix: {exc}") from exc
+            # Full detail goes to the server log only; the API response must not
+            # carry proxy/host/stack internals to the user's screen.
+            log.warning("bitunix %s %s failed: %s", method, path, exc)
+            raise BitunixError("could not reach Bitunix: network error") from exc
         try:
             data = r.json()
         except ValueError:
-            raise BitunixError(f"non-JSON response (HTTP {r.status_code}): {r.text[:200]}")
+            log.warning("bitunix %s %s non-JSON HTTP %s: %s", method, path, r.status_code, r.text[:200])
+            raise BitunixError(f"Bitunix returned an unexpected response (HTTP {r.status_code})")
         if isinstance(data, dict) and data.get("code") not in (0, "0", None):
             raise BitunixError(f"Bitunix error {data.get('code')}: {data.get('msg', data)}")
         return data.get("data", data) if isinstance(data, dict) else data

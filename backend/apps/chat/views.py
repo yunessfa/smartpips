@@ -207,7 +207,7 @@ def scalp_signal(request):
                       live_price=float(price),
                       balance=request.data.get("balance"),
                       risk_pct=request.data.get("risk_pct"),
-                      mode=mode)
+                      mode=mode, brief=True)
 
     decision["symbol"] = symbol
     decision["timeframe"] = timeframe

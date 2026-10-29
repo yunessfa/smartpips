@@ -213,14 +213,15 @@ export default function Strategies() {
                 ? "border-up/40 bg-up/[0.05]" : "border-ink-500 bg-ink-800/60"}`}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 truncate text-sm font-semibold text-mist-100">
-                    {isPlaybook(s) ? t("preset_trend_pullback_name") : s.name}
+                    {presetText(t, s, "name")}
                   </p>
-                  <Badge tone={isPlaybook(s) ? "up" : undefined}>
-                    {isPlaybook(s) ? t("st_validated") : t(`st_market_${s.market}`)}
+                  <Badge tone={isPlaybook(s) ? "up" : "gold"}>
+                    {isPlaybook(s) ? t("st_validated") : t("st_unvalidated")}
                   </Badge>
                 </div>
                 <p className="mt-1.5 text-xs leading-relaxed text-mist-500">
-                  {isPlaybook(s) ? t("preset_trend_pullback_desc") : s.description}
+                  {presetText(t, s, "desc")}
+                  {!isPlaybook(s) && <span className="mt-1 block text-[11px] text-gold-soft/80">{t("st_unvalidated_hint")}</span>}
                 </p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] text-mist-500">
                   {isPlaybook(s) ? (
@@ -849,6 +850,13 @@ function BuilderModal({ draft, vocab, isRTL, onClose, onSaved }) {
       </div>
     </div>
   );
+}
+
+function presetText(t, s, field) {
+  const key = `preset_${s.preset_key}_${field}`;
+  const v = s.preset_key ? t(key) : key;
+  if (v && v !== key) return v;
+  return field === "name" ? s.name : s.description;
 }
 
 function isPlaybook(strategy) {

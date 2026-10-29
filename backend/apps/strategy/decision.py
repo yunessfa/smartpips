@@ -18,7 +18,7 @@ HTF = {"1m": ["5m", "15m"], "5m": ["15m", "1h"],
 
 
 def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
-           balance=None, risk_pct=None, mode="safe"):
+           balance=None, risk_pct=None, mode="safe", brief=False):
     """Run the full pipeline and return the engine decision (enriched).
 
     balance/risk_pct (optional): if the user provides their account size and the
@@ -42,7 +42,10 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
         version and (version.risk or {}).get("signal_source") == "playbook")
     engine_mode = "safe" if mode == "trend" else mode
     from . import trend_pullback
-    tf_limit = trend_pullback.LIVE_FETCH_BARS if playbook else 300
+    # The market brief (scalp page) needs the same converged EMAs and 4h/1h
+    # trend as the playbook, whatever engine mode was selected.
+    long_view = playbook or brief
+    tf_limit = trend_pullback.LIVE_FETCH_BARS if long_view else 300
 
     # 1) DATA — real candles first (broker via candles.py), tick fallback handled below
     tf_candles = fetch_candles(symbol, timeframe, limit=tf_limit)
@@ -83,12 +86,12 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
     htf_map = {}
     stale_htf = []
     htf_labels = list(HTF.get(timeframe, []))
-    if playbook:
+    if long_view:
         htf_labels += [x for x in ("4h", "1h")
                        if x not in htf_labels and TF_SECONDS[x] > TF_SECONDS.get(timeframe, 300)]
     if data_quality == "candles":
         for label in htf_labels:
-            hc = fetch_candles(symbol, label, limit=trend_pullback.LIVE_FETCH_BARS if playbook else 200)
+            hc = fetch_candles(symbol, label, limit=trend_pullback.LIVE_FETCH_BARS if long_view else 200)
             if hc:
                 htf_step = TF_SECONDS[label]
                 clean, htf_quality = inspect_bars(hc, htf_step, _clock.time(),
@@ -174,6 +177,14 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
         _apply_risk(decision, symbol, user, manual_balance=balance,
                     manual_risk_pct=risk_pct)
 
+    if brief and data_quality == "candles":
+        from . import market_brief
+        try:
+            decision["brief"] = market_brief.build(decision, symbol, timeframe, tf_candles,
+                                                   {k: htf_map.get(k) or [] for k in ("4h", "1h")})
+        except Exception:  # the brief is display-only; never break a decision
+            import logging
+            logging.getLogger("smartpips.strategy").exception("market brief failed")
     from .evidence import enrich_explanation
     enrich_explanation(decision)
     if user is not None:

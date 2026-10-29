@@ -84,12 +84,35 @@ async function request(path, options = {}, retried = false) {
         detail += ` (need ${data.needMargin} / have ${data.available} USDT)`;
       }
     } catch { /* ignore */ }
-    const err = new Error(detail);
+    const err = new Error(friendlyError(detail, res.status));
     err.status = res.status;
+    err.raw = detail;
     throw err;
   }
   if (res.status === 204) return null;
   return res.json();
+}
+
+// Technical failures (proxy/host strings, HTML error pages, stack traces) are
+// never shown verbatim; the exchange's own business messages still pass through.
+const FRIENDLY = {
+  exchange: { fa: "اتصال به صرافی Bitunix برقرار نشد. چند لحظه بعد دوباره تلاش کنید.",
+              en: "Could not reach the Bitunix exchange. Please try again in a moment." },
+  server: { fa: "سرور موقتاً پاسخ نداد. چند لحظه بعد دوباره تلاش کنید.",
+            en: "The server did not respond. Please try again in a moment." },
+  data: { fa: "داده بازار برای این نماد در دسترس نیست.",
+          en: "Market data for this symbol is not available right now." },
+};
+
+export function friendlyError(detail, status) {
+  const lang = (() => { try { return localStorage.getItem("lang") === "en" ? "en" : "fa"; } catch { return "fa"; } })();
+  const text = String(detail ?? "");
+  if (/could not reach Bitunix|unexpected response \(HTTP/i.test(text)) return FRIENDLY.exchange[lang];
+  if (/HTTPSConnectionPool|Max retries|ProxyError|Traceback|<html|<!doctype|Errno|Tunnel connection/i.test(text)) {
+    return FRIENDLY[status === 503 ? "data" : "server"][lang];
+  }
+  if (!text || ((status === 502 || status === 503 || status === 504) && text.length > 160)) return FRIENDLY.server[lang];
+  return text.length > 300 ? `${text.slice(0, 300)}…` : text;
 }
 
 export const api = {
@@ -297,6 +320,8 @@ export const strategyApi = {
   updateChannel: (id, data) => api.patch(`/strategy/telegram/${id}/`, data),
   removeChannel: (id) => api.del(`/strategy/telegram/${id}/`),
   previewChannel: (id) => api.post(`/strategy/telegram/${id}/preview/`, {}),
+  overview: (tf = "1h", symbols) =>
+    api.get(`/strategy/overview/?tf=${encodeURIComponent(tf)}${symbols ? `&symbols=${encodeURIComponent(symbols.join(","))}` : ""}`),
   backtest: (symbol, timeframe, tickSeries, opts = {}) =>
     api.post(`/strategy/backtest/`, { symbol, timeframe, tick_series: tickSeries || [],
       ...(opts.mode ? { mode: opts.mode } : {}), ...(opts.bars ? { bars: opts.bars } : {}) }),

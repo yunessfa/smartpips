@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path
-from .views import IndicatorViewSet, TelegramChannelViewSet, backtest_view
+from .views import IndicatorViewSet, TelegramChannelViewSet, backtest_view, market_overview
 from .config_views import StrategyViewSet, strategy_vocabulary
 
 router = DefaultRouter()
@@ -13,4 +13,5 @@ router.register("strategies", StrategyViewSet, basename="strategy")
 urlpatterns = router.urls + [
     path("backtest/", backtest_view, name="strategy-backtest"),
     path("vocabulary/", strategy_vocabulary, name="strategy-vocabulary"),
+    path("overview/", market_overview, name="strategy-overview"),
 ]

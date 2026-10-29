@@ -20,18 +20,35 @@ DECISION = {
 
 
 class EngineExplanationTests(SimpleTestCase):
-    def test_fact_based_explanation_without_false_trade_on_wait(self):
+    def test_short_decision_first_text_without_indicator_dump(self):
         summary, text = engine_explanation('BTCUSDT','5m',DECISION)
-        for fact in ('60120','47','60110','59950','60550','60600','Fixture strategy','trailing_stop'):
+        for fact in ('59,950','60,550','Fixture strategy','RSI'):
             self.assertIn(fact,text)
-        self.assertNotIn('ورود: 60200',text)
+        # no indicator dump, no stale entry on a WAIT
+        for noise in ('EMA9','MACD_hist','Stochastic','FVG_quality','60,120'):
+            self.assertNotIn(noise,text)
+        self.assertNotIn('ورود 60,200',text)
         self.assertIn('امتیاز، درصد برد نیست',text)
         self.assertIn('انتظار',summary)
+        self.assertLessEqual(len(text.splitlines()), 10)
 
     def test_no_data_still_has_a_truthful_explanation(self):
         _,text=engine_explanation('BTCUSDT','5m',{'signal':'wait','data_quality':'none','score':0})
         self.assertIn('ناموجود',text)
-        self.assertIn('ورود نیستند',text)
+        self.assertIn('دستور ورود نیستند',text)
+        self.assertIn('سیگنال معتبر نیست',text)
+
+    def test_brief_lines_and_active_limit(self):
+        d={'signal':'buy','signal_source':'playbook','entry':100.5,'stop_loss':99,'take_profit':105,
+           'risk_reward':3,'entry_plan':{'type':'limit','valid_for_bars':12},
+           'brief':{'timeframe':'1h','facts':[{'key':'h4_trend','value':1,'state':'ok'},
+                    {'key':'volatility','value':0.8,'need':0.4,'state':'ok'}],
+                    'next':{'code':'limit_active','price':100.5,'valid_bars':12}}}
+        summary,text=engine_explanation('BTCUSDT:PERP','1h',d)
+        self.assertIn('لیمیت',summary)
+        self.assertIn('✓ روند ۴ساعته: صعودی',text)
+        self.assertIn('پلی‌بوک',text)
+        self.assertIn('تارگت 105',text)
 
 
 class ExplanationAPITests(TestCase):
@@ -57,12 +74,12 @@ class ExplanationAPITests(TestCase):
         for raw in ('', '{"summary":"Summary only"}'):
             with patch('apps.chat.views.chat_completion',return_value=raw):
                 r=self.signal(explain=True)
-            self.assertTrue(r.data['explanation']); self.assertIn('60120',r.data['explanation'])
+            self.assertTrue(r.data['explanation']); self.assertIn('59,950',r.data['explanation'])
             self.assertEqual(r.data['ai_explanation_status'],'empty')
         with patch('apps.chat.views.chat_completion',side_effect=RuntimeError('fixture')):
             with self.assertLogs('apps.chat.views',level='ERROR'):
                 r=self.signal(explain=True)
-        self.assertEqual(r.status_code,200); self.assertIn('60120',r.data['explanation'])
+        self.assertEqual(r.status_code,200); self.assertIn('59,950',r.data['explanation'])
 
     def test_explain_endpoint_uses_signed_same_decision_without_recomputing(self):
         AIProvider.objects.create(label='fixture',is_active=True)

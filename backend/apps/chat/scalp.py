@@ -13,31 +13,17 @@ NAMES = {"XAUUSD": "Gold (XAU/USD)", "XAGUSD": "Silver (XAG/USD)"}
 
 EXPLAIN_SYSTEM = """You are SmartPips SCALP mentor for {name} on the {timeframe} timeframe.
 
-A separate quantitative engine has ALREADY decided the trade from real indicators
-(EMA stack, VWAP, RSI, MACD, Stochastic, SMC structure: BOS/CHOCH/MSS/FVG/liquidity,
-order-flow pressure/delta, liquidity sweeps, order blocks, premium/discount zones,
-and key levels: previous-day high/low (PDH/PDL) and Asian high/low (AH/AL)),
-multi-timeframe agreement, the market session and a volatility-adaptive risk
-manager. Your job is ONLY to EXPLAIN that decision like a trading mentor — do NOT
-change the signal, entry, take-profit, stop-loss or confidence, and do NOT invent
-numbers.
+A separate quantitative engine has ALREADY decided the trade on CLOSED candles.
+Your job is ONLY to explain that decision like a calm trading mentor — do NOT
+change the signal, entry, take-profit, stop-loss, and do NOT invent numbers.
 
-Write in Persian. Explicitly distinguish measured readings, estimates and
-missing data. Never call the engine score a win probability. Do not claim
-unavailable news, volume-at-price or order-book evidence. Explain the FINAL
-decision including strategy vetoes/news/risk gates, not just the initial setup.
-The engine's deterministic explanation is factual context; add clarity rather
-than inventing missing confirmations. Structure it like a
-mentor briefing, not a dry line:
-  - one sentence on the market context (trend / session).
-  - "reasons to enter" as a short bullet checklist using the engine's data: cite
-    things like BOS/CHOCH, unfilled FVG, liquidity (equal highs/lows), EMA/VWAP
-    alignment, RSI/MACD, higher-timeframe agreement, and the session quality.
-  - "risks" as a short bullet checklist (nearby support/resistance, weak score,
-    quiet session, news, anything conflicting).
-  - where stop & target sit vs structure, the Risk:Reward, and what invalidates it.
-If the engine says "wait", explain in the same style WHAT is missing and what to
-wait for — remember sometimes the best trade is no trade.
+Write in Persian, short (max 6 lines). Base the explanation on the "brief"
+object: higher-timeframe trend, EMA alignment, distance from EMA21 (pullback),
+volatility vs the 0.4% cost floor, and the "next" step. A multi-year study
+found NO measurable edge in RSI, MACD, Stochastic, SMC (BOS/CHOCH/FVG), order
+blocks, estimated order flow or premium/discount on 5m/15m — never present
+them as reasons to enter. Never call any score a win probability. If the
+decision is "wait", say what is missing and what would change it.
 
 Use ✓ for confirmations and ✗ for risks. Return ONLY one minified JSON object,
 ASCII digits, no markdown:
@@ -47,8 +33,12 @@ ASCII digits, no markdown:
 
 def build_explanation_prompt(symbol, timeframe, decision, profile_text=""):
     name = NAMES.get(symbol, symbol)
+    keep = ("signal", "signal_source", "entry", "stop_loss", "take_profit", "risk_reward", "entry_plan",
+            "exit_plan", "brief", "reason", "wait_reasons", "strategy_name", "strategy_evaluation",
+            "risk_block", "news_guard", "support", "resistance", "data_quality")
+    compact = {k: decision.get(k) for k in keep if decision.get(k) is not None}
     user = (
-        f"ENGINE DECISION (do not change it):\n{json.dumps(decision, ensure_ascii=False)}\n\n"
+        f"ENGINE DECISION (do not change it):\n{json.dumps(compact, ensure_ascii=False, default=str)}\n\n"
         f"TRADER PROFILE (mention only if relevant):\n{profile_text or '- (none)'}\n\n"
         f"Explain this {timeframe} decision for {symbol}."
     )
@@ -75,94 +65,68 @@ def parse_explanation(raw: str):
 
 
 def engine_explanation(symbol, timeframe, decision):
-    """Deterministic explanation for THIS snapshot, even without an AI provider.
+    """Short, decision-first explanation for THIS closed-candle snapshot.
 
-    Report supplied readings only. A score is not a calibrated win probability;
-    absent checks/data are never described as confirmed evidence.
+    2026-10: the old version printed every indicator (EMA9, MACD, SMC dicts,
+    FVG internals…) on every request, so each answer looked the same and buried
+    the decision. The indicator study found no measurable edge in those
+    readings on 5m/15m, so the text now carries only: the decision, the
+    validated market facts (market_brief), the levels that matter, strategy
+    vetoes and risk/news blocks. Nothing here is a win probability.
     """
-    import math
+    from apps.strategy import market_brief
 
-    def number(value):
+    def num(value):
         try:
             n = float(value)
-            return f"{n:.10g}" if math.isfinite(n) else 'ناموجود'
+            return f"{n:,.10g}"
         except (TypeError, ValueError):
-            return 'ناموجود'
+            return "ناموجود"
 
-    def text(value):
-        if value is None:
-            return 'ناموجود'
-        if isinstance(value, bool):
-            return 'بله' if value else 'خیر'
-        names = {'bullish': 'صعودی', 'bearish': 'نزولی', 'neutral': 'خنثی',
-                 'trending': 'رونددار', 'ranging': 'رنج', 'quiet': 'کم‌تحرک',
-                 'volatile': 'پرنوسان', 'above': 'بالاتر', 'below': 'پایین‌تر',
-                 'inside': 'داخل محدوده', 'normal': 'عادی'}
-        if isinstance(value, dict):
-            return '، '.join(f'{k}: {text(v)}' for k, v in value.items())
-        return names.get(str(value), str(value))
-
-    signal = decision.get('signal', 'wait')
-    action = {'buy': 'خرید', 'sell': 'فروش', 'wait': 'انتظار / عدم ورود'}.get(signal, 'عدم ورود')
-    summary = f'{symbol} در {timeframe}: تصمیم فعلی موتور «{action}» است؛ این نتیجه تضمین سود نیست.'
-    indicators = decision.get('indicators') or {}
-    regime = decision.get('market_regime') or {}
-    session = decision.get('session') or {}
-    lines = [f'۱) وضعیت فعلی — {symbol} · {timeframe}',
-             f'تصمیم: {action} | امتیاز: {number(decision.get("score"))} از ۱۰۰. امتیاز، درصد برد نیست.',
-             f'کیفیت داده: {text(decision.get("data_quality"))}؛ سشن: {text(session.get("name"))}؛ وضعیت بازار: {text(regime.get("regime") or decision.get("regime"))}.']
-    reason = decision.get('reason')
-    if reason:
-        reasons = {
-            'market too quiet to scalp (low volatility)': 'نوسان بازار برای اسکالپ کافی نیست',
-            'wide, directionless bars — too risky': 'کندل‌ها بزرگ و بدون جهت روشن‌اند',
-            'higher timeframe conflicts with the setup': 'تایم‌فریم بالاتر با ستاپ تعارض دارد',
-            'over-extended from EMA9 — wait for a pullback': 'قیمت از EMA9 دور شده؛ باید منتظر پولبک ماند',
-            'could not place a stop with acceptable R:R': 'حد ضرر با نسبت سود به زیان قابل قبول پیدا نشد',
-            'all layers aligned': 'لایه‌های بررسی‌شده موتور هم‌جهت بوده‌اند',
-            'Candle feed is stale; new entries disabled.': 'کندل‌ها قدیمی‌اند؛ ورود جدید غیرفعال است',
-            'no candle/tick data available': 'داده کندل یا تیک برای تحلیل موجود نیست',
-        }
-        lines.append('علت ثبت‌شده موتور: ' + reasons.get(reason, reason))
-    lines += ['', '۲) شواهد عددی همین تحلیل']
-    for key in ('EMA9', 'EMA50', 'EMA200', 'VWAP', 'RSI', 'MACD_hist'):
-        lines.append(f'{key}: {number(indicators.get(key))}')
-    lines.append('Stochastic: ' + text(indicators.get('Stoch')))
-    for key in ('SMC', 'MSS', 'LiquiditySweep', 'OrderBlock', 'PremiumDiscount', 'FVG_quality'):
-        lines.append(f'{key}: {text(indicators.get(key))}')
-    flow = indicators.get('OrderFlow') or {}
-    lines.append(f'فشار محاسبه‌شده: دلتا {number(flow.get("delta"))}؛ خرید {number(flow.get("buy_pressure"))}؛ فروش {number(flow.get("sell_pressure"))}. این مقادیر تضمین جهت آینده نیستند.')
-    lines.append('تایید تایم‌فریم‌های بالاتر: ' + text(decision.get('htf_detail')))
-    lines += ['', '۳) شروط استراتژی انتخاب‌شده',
-              f'استراتژی: {decision.get("strategy_name") or "موتور پایه"}؛ نسخه: {text(decision.get("strategy_version"))}.']
-    evaluation = decision.get('strategy_evaluation') or {}
-    checks = evaluation.get('checks') or []
-    for check in checks:
-        passed = check.get('passed')
-        state = 'تأیید' if passed is True else 'رد' if passed is False else 'داده ناموجود'
-        mandatory = ' (اجباری)' if check.get('required') else ''
-        lines.append(f'{state}{mandatory}: {check.get("label") or check.get("block")}؛ مشاهده {text(check.get("actual"))}؛ شرط {check.get("operator")} {text(check.get("value"))}.')
-    if not checks:
-        lines.append(evaluation.get('reason') or 'ارزیابی جداگانه‌ای از شروط سفارشی در این پاسخ ثبت نشده است.')
-    lines += ['', '۴) سطوح و ریسک',
-              f'حمایت: {number(decision.get("support"))}؛ مقاومت: {number(decision.get("resistance"))}.',
-              'سطوح کلیدی: ' + text(indicators.get('KeyLevels'))]
-    vp = decision.get('volume_profile') or {}
-    if vp:
-        lines.append(f'پروفایل حجمی تخمینی OHLCV: POC {number(vp.get("poc"))}؛ VAH {number(vp.get("vah"))}؛ VAL {number(vp.get("val"))}. حجم واقعی معامله‌شده در هر قیمت نیست.')
-    if signal in ('buy', 'sell'):
-        lines.append(f'ورود: {number(decision.get("entry"))}؛ حد ضرر: {number(decision.get("stop_loss"))}؛ هدف: {number(decision.get("take_profit"))}؛ R:R: {number(decision.get("risk_reward"))}.')
-        lines.append('برنامه فعلی با رسیدن به حد ضرر یا تغییر شروط تأییدشده نیازمند بازبینی است؛ این خط لزوماً ابطال کل ساختار بازار نیست.')
+    signal = decision.get("signal", "wait")
+    brief = decision.get("brief") or {}
+    action = {"buy": "خرید", "sell": "فروش"}.get(signal)
+    if action:
+        plan = decision.get("entry_plan") or {}
+        how = "سفارش لیمیت" if plan.get("type") == "limit" else "ورود"
+        summary = f"{symbol} · {timeframe}: {action} — {how} روی {num(decision.get('entry'))}"
     else:
-        lines.append('چون تصمیم نهایی انتظار است، سطوح باقی‌مانده از ستاپ اولیه دستور ورود نیستند. برای ورود باید مانع ثبت‌شده رفع و تحلیل تازه دوباره تأیید شود.')
-    if decision.get('position_size'):
-        lines.append('اندازه پیشنهادی موقعیت: ' + text(decision['position_size']))
-    for key, label in (('risk_block', 'مانع ریسک'), ('news_guard', 'محافظ خبر')):
-        if decision.get(key):
-            lines.append(label + ': ' + str(decision[key]))
-    if not decision.get('news_guard'):
-        lines.append('در این پاسخ هشدار مسدودکننده خبر ثبت نشده؛ این به معنی نبود خبر یا پوشش کامل اخبار نیست.')
-    if decision.get('risk_settings_not_executed'):
-        lines.append('تنظیمات استراتژی که موتور اجرا نمی‌کند: ' + ', '.join(decision['risk_settings_not_executed']))
-    lines.append('کارمزد، اسپرد، لغزش و تغییرات سریع بازار می‌توانند نتیجه واقعی را عوض کنند؛ سود یا نرخ برد از این تحلیل قابل تضمین نیست.')
-    return summary, '\n'.join(lines)
+        summary = f"{symbol} · {timeframe}: انتظار — {market_brief.wait_text(decision)}"
+
+    lines = []
+    if decision.get("signal_source") == "playbook":
+        lines.append("منبع: پلی‌بوک تأییدشده «پولبک روند» (آزمون ۸ساله بیت‌کوین، بعد از کارمزد).")
+    else:
+        lines.append(f"منبع: موتور امتیازی قدیمی — امتیاز {num(decision.get('score'))} از ۱۰۰ "
+                     "(امتیاز، درصد برد نیست؛ این موتور در آزمون چندساله برتری آماری نشان نداد).")
+    if decision.get("strategy_name"):
+        lines.append(f"استراتژی فعال: {decision['strategy_name']} · نسخه {decision.get('strategy_version') or '—'}")
+    if brief:
+        lines += market_brief.lines(brief, decision)
+    elif signal not in ("buy", "sell"):
+        lines.append("✗ " + market_brief.wait_text(decision))
+
+    if action:
+        lines.append(f"سطوح: ورود {num(decision.get('entry'))} · حد ضرر {num(decision.get('stop_loss'))} · "
+                     f"تارگت {num(decision.get('take_profit'))} · R:R {num(decision.get('risk_reward'))}")
+    else:
+        parts = []
+        if brief.get("pullback_level"):
+            parts.append(f"سطح پولبک (EMA21) {num(brief['pullback_level'])}")
+        parts.append(f"حمایت {num(decision.get('support'))}")
+        parts.append(f"مقاومت {num(decision.get('resistance'))}")
+        lines.append("سطوح مهم: " + " · ".join(parts) + ". این‌ها دستور ورود نیستند.")
+
+    for check in (decision.get("strategy_evaluation") or {}).get("checks") or []:
+        if check.get("passed") is not True:
+            state = "داده ناموجود" if check.get("passed") is None else "رد"
+            lines.append(f"✗ شرط استراتژی «{check.get('label') or check.get('block')}» ({state}): "
+                         f"مقدار {check.get('actual')}، شرط {check.get('operator')} {check.get('value')}")
+    if decision.get("risk_block"):
+        lines.append("⛔ مانع ریسک حساب: " + str(decision["risk_block"]))
+    if decision.get("news_guard"):
+        lines.append("📅 محافظ خبر: " + str(decision["news_guard"]))
+    if decision.get("data_quality") not in (None, "candles"):
+        lines.append("⚠ کیفیت داده: " + str(decision.get("data_quality")) + " — سیگنال معتبر نیست.")
+    lines.append("تحلیل روی آخرین کندل بسته‌شده است؛ تا بسته‌شدن کندل بعدی نتیجه عوض نمی‌شود.")
+    return summary, "\n".join(lines)

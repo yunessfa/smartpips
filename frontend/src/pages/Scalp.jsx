@@ -1,10 +1,12 @@
 import { DecisionAudit } from "../components/DecisionAudit.jsx";
+import MarketBrief from "../components/MarketBrief.jsx";
+import { fill } from "../lib/fill.jsx";
 import { BacktestReasons } from "../components/BacktestReasons.jsx";
 import BacktestEvidence, { Cell as EvidenceCell } from "../components/BacktestEvidence.jsx";
 import { BT_PERIODS, barsFor } from "../lib/backtestPeriods.js";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { PageHeader } from "../components/Layout.jsx";
-import { Panel, Badge, Button, Spinner } from "../components/ui.jsx";
+import { Panel, Button } from "../components/ui.jsx";
 import { SignalChart } from "../components/TradingView.jsx";
 import { EconomicNewsPanel } from "../components/EconomicNewsPanel.jsx";
 import { PositionChart } from "../components/PositionChart.jsx";
@@ -22,7 +24,6 @@ import { scalpApi, tradesApi, strategyApi, alertsApi, mt5Api, marketApi } from "
 import { useI18n } from "../i18n/index.jsx";
 import { useMetalTick } from "../live/useMetalTick.js";
 import { CRYPTO_BASE } from "../lib/symbols.js";
-import { computeScalp } from "../lib/scalp.js";
 import { fmtPrice, parsePrice } from "../lib/num.js";
 import { createRequestGate } from "../lib/requestGate.js";
 import { pushSupported, isIOS, isStandalone, enablePush, disablePush } from "../live/push.js";
@@ -31,27 +32,25 @@ import { pushSupported, isIOS, isStandalone, enablePush, disablePush } from "../
 // kept in sync manually since frontend/backend are separate codebases here.
 // crypto universe moved to lib/symbols.js (shared with the Bitunix panel)
 
+// Crypto futures first: they are the product's focus and the default symbol.
 const METALS = [
-  { symbol: "XAUUSD", tv: "TVC:GOLD", label: "XAU/USD", group: "metals" },
-  { symbol: "XAGUSD", tv: "TVC:SILVER", label: "XAG/USD", group: "metals" },
-  // crypto spot (Binance) — ~50 liquid pairs, exchange-style
-  ...CRYPTO_BASE.map((b) => ({
-    symbol: `${b}USDT`, tv: `BINANCE:${b}USDT`, label: `${b} spot`, group: "spot",
-  })),
-  // crypto futures / perpetual (Binance USD-M) — real volume + funding-driven moves
+  // crypto futures / perpetual (Bitunix execution venue) — the default group
   ...CRYPTO_BASE.map((b) => ({
     symbol: `${b}USDT:PERP`, tv: `BINANCE:${b}USDT.P`, label: `${b} futures`, group: "futures",
   })),
+  // crypto spot
+  ...CRYPTO_BASE.map((b) => ({
+    symbol: `${b}USDT`, tv: `BINANCE:${b}USDT`, label: `${b} spot`, group: "spot",
+  })),
+  { symbol: "XAUUSD", tv: "TVC:GOLD", label: "XAU/USD", group: "metals" },
+  { symbol: "XAGUSD", tv: "TVC:SILVER", label: "XAG/USD", group: "metals" },
 ];
+const VALIDATED_TFS = ["5m", "15m", "1h"];
 
 // label shown to user -> TradingView interval code
 const TIMEFRAMES = [
   ["1m", "1"], ["5m", "5"], ["15m", "15"], ["1h", "60"], ["4h", "240"],
 ];
-
-function signalTone(sig) {
-  return sig === "buy" ? "up" : sig === "sell" ? "down" : "gold";
-}
 
 const GROUP_KEY = { metals: "metals", spot: "spot", futures: "futures" };
 
@@ -187,6 +186,10 @@ export default function Scalp() {
       const found = METALS.find((m) => m.symbol === quickSymbol.toUpperCase());
       if (found) return found;
     }
+    try {
+      const saved = METALS.find((m) => m.symbol === localStorage.getItem("sp_symbol"));
+      if (saved) return saved;
+    } catch { /* ignore */ }
     return METALS[0];
   });
   const [tf, setTf] = useState(() => {
@@ -194,11 +197,14 @@ export default function Scalp() {
       const found = TIMEFRAMES.find((t) => t[0] === quickTf);
       if (found) return found;
     }
-    return TIMEFRAMES[0];
+    try {
+      const saved = TIMEFRAMES.find((x) => x[0] === localStorage.getItem("sp_tf"));
+      if (saved) return saved;
+    } catch { /* ignore */ }
+    return TIMEFRAMES[2]; // 15m: validated and fast enough to scalp
   });
   const { price, series, status } = useMetalTick(metal.symbol, { intervalMs: 1000, history: 300 });
 
-  const scalp = useMemo(() => computeScalp(series), [series]);
 
   const [ai, setAi] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -261,7 +267,19 @@ export default function Scalp() {
     return () => { alive = false; };
   }, [bxMode]);
   const [riskPct, setRiskPct] = useState(() => localStorage.getItem("sp_risk") || "1");
-  const [scalpMode, setScalpMode] = useState(() => localStorage.getItem("sp_mode") || "safe");
+  // Default = the validated trend-pullback playbook. One-time migration: the
+  // legacy score engine showed no edge in the 2019-2026 study, so earlier
+  // "safe" defaults move to "trend" once; an explicit later choice is kept.
+  const [scalpMode, setScalpMode] = useState(() => {
+    try {
+      if (localStorage.getItem("sp_mode_v2") !== "1") {
+        localStorage.setItem("sp_mode_v2", "1");
+        localStorage.setItem("sp_mode", "trend");
+        return "trend";
+      }
+      return localStorage.getItem("sp_mode") || "trend";
+    } catch { return "trend"; }
+  });
 
   function switchMode(m) { setScalpMode(m); localStorage.setItem("sp_mode", m); }
 
@@ -291,6 +309,17 @@ export default function Scalp() {
       window.removeEventListener("storage", onStorage); };
   }, []);
 
+  // Same closed candle + same facts = same answer. Mark it instead of
+  // presenting a repeated reading as a fresh analysis.
+  const lastPrint = useRef(null);
+  const [unchanged, setUnchanged] = useState(false);
+  function acceptDecision(res) {
+    const fp = res?.brief?.fingerprint || null;
+    setUnchanged(Boolean(fp && lastPrint.current === fp));
+    lastPrint.current = fp;
+    setAi(res);
+  }
+
   async function getAiSignal(explain = true) {
     const snap = snapshot.current;
     if (!snap.price) return;
@@ -304,7 +333,7 @@ export default function Scalp() {
         snap.balance ? Number(snap.balance) : undefined,
         snap.riskPct ? Number(snap.riskPct) : undefined, snap.mode, false, explain);
       const res = await fetchSignal();
-      if (signalGate.current.current(seq)) { setAi(res); setAiError(null); }
+      if (signalGate.current.current(seq)) { acceptDecision(res); setAiError(null); }
       if (explain && signalGate.current.current(seq) && res.explanation_token) {
         const extra = await scalpApi.explain(res.explanation_token);
         if (signalGate.current.current(seq) && extra.decision_id === res.decision_id) {
@@ -348,7 +377,7 @@ export default function Scalp() {
       const res = await scalpApi.signal(snap.symbol, px, snap.timeframe, [],
         snap.balance ? Number(snap.balance) : undefined, snap.riskPct ? Number(snap.riskPct) : undefined,
         snap.mode, false);
-      if (signalGate.current.current(seq)) setAi(res);
+      if (signalGate.current.current(seq)) acceptDecision(res);
     } catch (e) { if (signalGate.current.current(seq)) setAiError(e.message); }
     finally {
       if (signalGate.current.current(seq)) setAiLoading(false);
@@ -407,11 +436,16 @@ export default function Scalp() {
     finally { setQuickLogging(false); }
   }
 
-  function switchMetal(m) { setMetal(m); setAi(null); setAiError(null); setQuickLogged(false); }
+  function switchMetal(m) {
+    setMetal(m); setAi(null); setAiError(null); setQuickLogged(false); lastPrint.current = null;
+    try { localStorage.setItem("sp_symbol", m.symbol); } catch { /* ignore */ }
+  }
+  function switchTf(f) {
+    setTf(f); lastPrint.current = null;
+    try { localStorage.setItem("sp_tf", f[0]); } catch { /* ignore */ }
+  }
 
 
-  const localTone = signalTone(scalp.signal);
-  const aiTone = ai ? signalTone(ai.signal) : "neutral";
 
   const tradeInitial = ai && {
     symbol: metal.symbol,
@@ -449,243 +483,162 @@ export default function Scalp() {
 
       <div className={`flex-1 overflow-y-auto min-h-0 p-4 md:p-6 space-y-4 ${
         openCount ? "pb-28 md:pb-24" : ""}`}>
-        <RiskBar balance={balance} riskPct={riskPct} onSave={saveRisk} source={balanceSource} />
-        <Collapse title={`👁 ${t("sc_watchlist_alerts")}`}>
+        {/* ---------------------------------------------------- controls */}
+        <section className="rounded-2xl border border-ink-500 bg-ink-700/70 p-3 md:p-4 shadow-panel space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-xs text-mist-500">
+                <span className={`h-1.5 w-1.5 rounded-full ${status === "live" ? "bg-up live-dot" : "bg-mist-500"}`} />
+                {metal.label}
+              </p>
+              {price ? (
+                <p className="tnum text-2xl md:text-3xl font-bold text-mist-100" dir="ltr">${fmtPrice(price)}</p>
+              ) : (
+                <p className="text-sm text-mist-500 mt-1">
+                  {status === "unavailable" ? t("metal_unavailable") : t("waiting_ticks")}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 rounded-lg bg-ink-800 p-0.5" role="group" aria-label={t("timeframe")}>
+                {TIMEFRAMES.map((f) => {
+                  const ok = scalpMode !== "trend" || VALIDATED_TFS.includes(f[0]);
+                  return (
+                    <button key={f[0]} onClick={() => switchTf(f)}
+                      title={ok ? undefined : t("pb_tf_hint")}
+                      className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition ${
+                        f[0] === tf[0] ? "bg-gold text-ink-900" : ok ? "text-mist-300 hover:bg-ink-600" : "text-mist-600 hover:bg-ink-600"
+                      }`}>{f[0]}</button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-1 rounded-lg bg-ink-800 p-0.5" role="group" aria-label={t("mode_label")}>
+                {[["trend", `✓ ${t("mode_trend")}`], ["safe", t("mode_safe_legacy")], ["aggressive", t("mode_aggressive_legacy")]].map(([m, label]) => (
+                  <button key={m} onClick={() => switchMode(m)} title={m === "trend" ? t("mode_trend_hint") : t("mode_legacy_hint")}
+                    className={`text-xs px-2.5 py-1.5 rounded-md ${scalpMode === m
+                      ? (m === "trend" ? "bg-up/20 text-up" : "bg-ink-600 text-mist-100")
+                      : "text-mist-500 hover:text-mist-300"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button className="min-h-11 flex-1 sm:flex-none sm:min-w-[12rem]" onClick={() => getAiSignal(true)} disabled={!price || aiLoading}>
+              {aiLoading ? t("thinking") : t("sc_analyze")}
+            </Button>
+            <button onClick={toggleAuto} title={t("auto_refresh")}
+              className={`min-h-11 text-xs px-3 rounded-lg border transition ${
+                autoRefresh ? "bg-up/15 text-up border-up/30" : "bg-ink-800 text-mist-500 border-ink-500 hover:text-mist-300"
+              }`}>
+              {autoRefresh ? `● ${t("auto_on")}` : `○ ${t("auto_off")}`}
+            </button>
+            <div className="ms-auto"><RiskBar balance={balance} riskPct={riskPct} onSave={saveRisk} source={balanceSource} /></div>
+          </div>
+          {scalpMode === "trend" && !VALIDATED_TFS.includes(tf[0]) && (
+            <p className="text-xs text-gold-soft">{t("pb_tf_hint")}</p>
+          )}
+          {scalpMode !== "trend" && <p className="text-xs text-gold-soft">{t("mode_legacy_warning")}</p>}
+        </section>
+
+        {aiError && (
+          <div className="text-down text-sm bg-down/10 border border-down/30 rounded-lg px-3 py-2">{aiError}</div>
+        )}
+        {!ai && !aiLoading && !aiError && (
+          <p className="rounded-2xl border border-dashed border-ink-500 px-4 py-6 text-center text-sm text-mist-500">
+            {t("sc_empty_hint")}
+          </p>
+        )}
+
+        {/* ---------------------------------------------------- decision */}
+        {ai && (
+          <section className="space-y-3">
+            <MarketBrief ai={ai} unchanged={unchanged} />
+            {ai.strategy_name && (
+              <p className="text-xs text-mist-500">
+                {t("sc_active_strategy")}: <span className="text-mist-300">{ai.strategy_name} · v{ai.strategy_version}</span>
+                {ai.strategy_note && <span className="text-gold-soft"> — {ai.strategy_note}</span>}
+              </p>
+            )}
+            {ai.signal !== "wait" && (
+              <Panel title={t("sc_trade_plan")}>
+                {ai.signal_source === "playbook" && <PlaybookCard ai={ai} timeframe={tf[0]} />}
+                {!ai.order_ticket && (
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    <Level label={t("entry")} value={ai.entry} tone="info" />
+                    <Level label={t("take_profit")} value={ai.take_profit} tone="up" />
+                    <Level label={t("stop_loss")} value={ai.stop_loss} tone="down" />
+                  </div>
+                )}
+                {ai.order_ticket && (
+                  <div className="mt-4">
+                    <OrderTicket ai={{ ...ai, timeframe: tf[0] }} livePrice={price} demoBalance={balance ? Number(balance) : undefined} onExecute={() => setLogging(true)} />
+                  </div>
+                )}
+                <ExecuteOrder
+                  symbol={metal.symbol}
+                  action={ai.signal}
+                  sl={parsePrice(ai.stop_loss)}
+                  tp={parsePrice(ai.take_profit)}
+                  suggestedQty={ai.position_size?.mode === "lots" ? ai.position_size.lots : ai.position_size?.quantity}
+                />
+                {ai.position_size && <PositionSizeCard ps={ai.position_size} lev={ai.leverage} action={ai.signal} />}
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  <Button onClick={() => setLogging(true)}>{t("log_this")}</Button>
+                  {isQuick && !quickLogged && (
+                    <Button variant="primary" onClick={quickLogTrade} disabled={quickLogging}>
+                      {quickLogging ? t("thinking") : `⚡ ${t("quick_log")}`}
+                    </Button>
+                  )}
+                  {quickLogged && <span className="text-up text-sm">✓ {t("trade_logged")}</span>}
+                </div>
+              </Panel>
+            )}
+            {ai.ai_explanation && (
+              <div className="rounded-xl border border-ink-500 bg-ink-800/60 px-4 py-3 text-sm leading-relaxed text-mist-200 whitespace-pre-line">
+                <p className="mb-1 text-xs text-mist-500">{t("sc_ai_commentary")}</p>
+                {ai.ai_explanation}
+              </div>
+            )}
+            <details className="sp-disclosure">
+              <summary>{t("sc_technical_details")}</summary>
+              <div className="space-y-3 pt-2">
+                {ai.explanation && <p className="text-xs text-mist-300 leading-relaxed whitespace-pre-line">{ai.explanation}</p>}
+                <LegacyReadings ai={ai} />
+                <DecisionAudit decision={ai} />
+              </div>
+            </details>
+          </section>
+        )}
+
+        {/* ---------------------------------------------------- chart */}
+        <Panel title={`${t("analysis_chart_title")} · ${metal.label} · ${tf[0]}`}>
+          <PositionChart symbol={metal.symbol} analysisMode analysis={ai} analysisTimeframe={tf[0]}
+            showSymbolPicker={false} height={440} storageKey="pc_tf_scalp" />
+        </Panel>
+
+        {/* ---------------------------------------------------- secondary */}
+        <Collapse title={`💼 ${t("sc_account_section")}`} defaultOpen>
+          <TradingAccountPanel balance={balance} defaultInitial={tradeInitial} refreshKey={tradesVersion} />
+        </Collapse>
+        <Collapse title={`📈 ${t("sc_tradingview")}`}>
+          <SignalChart symbol={metal.tv} interval={tf[1]} height={380} studies={NO_STUDIES} hideVolume />
+        </Collapse>
+        <Collapse title={`📚 ${t("sc_market_context")}`}>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {metal.group !== "metals" && <OrderBook symbol={metal.symbol} lastPrice={price} />}
+            <EconomicNewsPanel symbol={metal.symbol} />
+          </div>
+        </Collapse>
+        <Collapse title={`📊 ${t("sc_backtest_section")}`}>
+          <BacktestPanel symbol={metal.symbol} timeframe={tf[0]} series={series} mode={scalpMode} />
+        </Collapse>
+        <Collapse title={`🔔 ${t("sc_watchlist_alerts")}`}>
           <div className="space-y-4">
             <AlertsToggle />
             <WatchlistPanel current={metal} />
           </div>
-        </Collapse>
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {/* timeframe selector */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-mist-500">{t("timeframe")}:</span>
-            {TIMEFRAMES.map((f) => (
-              <button
-                key={f[0]}
-                onClick={() => setTf(f)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition ${
-                  f[0] === tf[0] ? "bg-gold text-ink-900" : "bg-ink-700 text-mist-300 hover:bg-ink-600"
-                }`}
-              >{f[0]}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* live tick + composite + AI button */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="bg-ink-700 border border-ink-500 rounded-xl px-4 py-3 shadow-panel">
-            <p className="text-xs text-mist-500 flex items-center gap-1.5">
-              <span className={`h-1.5 w-1.5 rounded-full ${status === "live" ? "bg-up live-dot" : "bg-mist-500"}`} />
-              {t("live_tick")} · {metal.label}
-            </p>
-            {price ? (
-              <>
-                <p className="tnum text-3xl font-semibold text-mist-100 mt-1">${fmtPrice(price)}</p>
-                <p className="text-[11px] text-mist-500 mt-0.5">{t("price_source")}</p>
-              </>
-            ) : (
-              <p className="text-sm text-mist-500 mt-2">
-                {status === "unavailable" ? t("metal_unavailable") : t("waiting_ticks")}
-              </p>
-            )}
-          </div>
-
-          <div className="bg-ink-700 border border-ink-500 rounded-xl px-4 py-3 shadow-panel">
-            <p className="text-xs text-mist-500">{t("composite_signal")}</p>
-            <div className="mt-1 flex items-center gap-2 flex-wrap">
-              <Badge tone={localTone}>{t(`signal_${scalp.signal}`)}</Badge>
-              <span className="tnum text-sm text-mist-300">{t("score")}: {scalp.score}/100</span>
-              {scalp.regime && <Badge tone="info">{scalp.regime}</Badge>}
-            </div>
-            <div className="mt-2 h-1.5 w-full bg-ink-800 rounded-full overflow-hidden">
-              <div className={`h-full ${scalp.score >= 70 ? "bg-up" : scalp.score <= 30 ? "bg-down" : "bg-gold"}`} style={{ width: `${scalp.score}%` }} />
-            </div>
-          </div>
-
-          <div className="bg-ink-700 border border-ink-500 rounded-xl px-4 py-3 shadow-panel flex flex-col gap-3">
-            <div className="min-w-0">
-              <p className="text-xs text-mist-500">{t("ai_scalp_signal")} · {tf[0]}</p>
-              <p className="text-sm text-mist-300 mt-1">{ai ? t(`signal_${ai.signal}`) : "—"}</p>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button onClick={toggleAuto}
-                title={t("auto_refresh")}
-                className={`text-xs px-2.5 py-1.5 rounded-md border transition ${
-                  autoRefresh ? "bg-up/15 text-up border-up/30" : "bg-ink-800 text-mist-500 border-ink-500 hover:text-mist-300"
-                }`}>
-                {autoRefresh ? `● ${t("auto_on")}` : `○ ${t("auto_off")}`}
-              </button>
-              <div className="flex items-center gap-1 bg-ink-800 rounded-lg p-0.5">
-                {[["trend", t("mode_trend")], ["safe", t("mode_safe")], ["aggressive", t("mode_aggressive")]].map(([m, label]) => (
-                  <button key={m} onClick={() => switchMode(m)} title={m === "trend" ? t("mode_trend_hint") : undefined}
-                    className={`text-xs px-2.5 py-1 rounded-md ${scalpMode === m
-                      ? (m === "trend" ? "bg-up/20 text-up" : "bg-ink-600 text-mist-100")
-                      : "text-mist-500 hover:text-mist-300"}`}>
-                    {m === "trend" ? `✓ ${label}` : label}
-                  </button>
-                ))}
-              </div>
-              <Button className="w-full min-h-11" onClick={() => getAiSignal(true)} disabled={!price || aiLoading}>
-                {aiLoading ? t("thinking") : t("get_ai_signal")}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {ai && <div className="text-sm text-mist-300 border border-ink-500 rounded-lg p-3 space-y-1">
-          <p>{ai.strategy_name ? `${ai.strategy_name} · v${ai.strategy_version}`
-            : ai.signal_source === "playbook" ? t("pb_title") : "SmartPips base engine"}</p>
-          {ai.strategy_evaluation && <p>{ai.strategy_evaluation.reason}</p>}
-          {ai.risk_settings_not_executed?.length > 0 && <p>{t("strategy_filter_notice")}</p>}
-        </div>}
-        {scalpMode === "trend" && !["5m", "15m", "1h"].includes(tf[0]) && (
-          <div className="text-xs text-gold-soft bg-gold/10 border border-gold/30 rounded-lg px-3 py-2">{t("pb_tf_hint")}</div>
-        )}
-        {ai?.signal_source === "playbook" && <PlaybookCard ai={ai} timeframe={tf[0]} />}
-        {aiError && (
-          <div className="text-down text-sm bg-down/10 border border-down/30 rounded-lg px-3 py-2">{aiError}</div>
-        )}
-        {ai && (
-          <Panel title={`${t("ai_scalp_signal")} · ${tf[0]}`}
-            action={
-              <button onClick={() => setAdvanced(!advanced)}
-                className="text-xs text-mist-400 hover:text-mist-100 border border-ink-500 rounded-lg px-2 py-1">
-                {advanced ? t("mode_advanced") : t("mode_beginner")}
-              </button>
-            }>
-            <SignalHeadline ai={ai} />
-            <details className="sp-disclosure mt-4">
-              <summary>{isRTL ? "شواهد و مسیر تصمیم موتور" : "Evidence & decision trace"}</summary>
-              <DecisionAudit decision={ai} />
-            </details>
-
-            {ai.signal !== "wait" && (
-              <div className="grid grid-cols-3 gap-2 mt-4">
-                <Level label={t("entry")} value={ai.entry} tone="info" />
-                <Level label={t("take_profit")} value={ai.take_profit} tone="up" />
-                <Level label={t("stop_loss")} value={ai.stop_loss} tone="down" />
-              </div>
-            )}
-            {ai.signal !== "wait" && ai.order_ticket && (
-              <div className="mt-4">
-                <OrderTicket ai={{ ...ai, timeframe: tf[0] }} livePrice={price} demoBalance={balance ? Number(balance) : undefined} onExecute={() => setLogging(true)} />
-              </div>
-            )}
-            {ai.signal !== "wait" && (
-              <ExecuteOrder
-                symbol={metal.symbol}
-                action={ai.signal}
-                sl={parsePrice(ai.stop_loss)}
-                tp={parsePrice(ai.take_profit)}
-                suggestedQty={ai.position_size?.mode === "lots" ? ai.position_size.lots : ai.position_size?.quantity}
-              />
-            )}
-            {ai.position_size && ai.signal !== "wait" && (
-              <PositionSizeCard ps={ai.position_size} lev={ai.leverage} action={ai.signal} />
-            )}
-            {ai.risk_block && (
-              <div className="mt-3 text-sm bg-down/10 border border-down/30 rounded-lg px-3 py-2 text-down">
-                ⛔ {t("risk_blocked")}: {ai.risk_block}
-              </div>
-            )}
-            {ai.summary && (
-              <p className="text-sm text-mist-100 bg-ink-700/60 border border-ink-500 rounded-lg px-3 py-2 mt-3 leading-relaxed">
-                💬 {ai.summary}
-              </p>
-            )}
-            {ai.explanation && <p className="text-xs text-mist-300 leading-relaxed mt-3 whitespace-pre-line">{ai.explanation}</p>}
-            {ai.ai_explanation && (
-              <p className="text-xs text-mist-300 leading-relaxed mt-3 whitespace-pre-line">
-                {isRTL ? "توضیح تکمیلی هوش مصنوعی:" : "Additional AI commentary:"}{"\n"}{ai.ai_explanation}
-              </p>
-            )}
-            {ai.signal === "wait" && ai.reason && (
-              <p className="text-xs text-gold-soft mt-2">⏳ {ai.reason}</p>
-            )}
-
-            {advanced && (
-              <>
-                <div className="flex items-center gap-2 flex-wrap mt-4 pt-3 border-t border-ink-600">
-                  {ai.risk_reward && <Badge tone="info">{t("risk_reward")}: {ai.risk_reward}</Badge>}
-                  {ai.htf_bias != null && (
-                    <Badge tone="neutral">HTF: {ai.htf_bias > 0 ? "↑" : ai.htf_bias < 0 ? "↓" : "→"}</Badge>
-                  )}
-                  {ai.data_quality === "ticks" && <Badge tone="down">tick-based</Badge>}
-                  {ai.session && <Badge tone={ai.session.score >= 6 ? "up" : "neutral"}>🕐 {ai.session.name}</Badge>}
-                  {ai.regime && <Badge tone="neutral">vol: {ai.regime}</Badge>}
-                  {ai.indicators?.OrderFlow && (
-                    <Badge tone={ai.indicators.OrderFlow.delta > 0 ? "up" : ai.indicators.OrderFlow.delta < 0 ? "down" : "neutral"}>
-                      Δ {ai.indicators.OrderFlow.delta}
-                    </Badge>
-                  )}
-                  {ai.indicators?.LiquiditySweep && <Badge tone="info">sweep: {ai.indicators.LiquiditySweep}</Badge>}
-                  {ai.indicators?.OrderBlock && <Badge tone={ai.indicators.OrderBlock === "bullish" ? "up" : "down"}>OB {ai.indicators.OrderBlock}</Badge>}
-                  {ai.indicators?.MSS && <Badge tone={ai.indicators.MSS === "bullish" ? "up" : "down"}>MSS {ai.indicators.MSS}</Badge>}
-                  {ai.indicators?.LevelSweep && <Badge tone="info">{ai.indicators.LevelSweep}</Badge>}
-                  {ai.indicators?.PremiumDiscount && ai.indicators.PremiumDiscount.zone !== "equilibrium" && (
-                    <Badge tone="neutral">{ai.indicators.PremiumDiscount.zone}</Badge>
-                  )}
-                  {ai.news_guard && <Badge tone="down">📅 {ai.news_guard}</Badge>}
-                </div>
-                {ai.score_breakdown && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {Object.entries(ai.score_breakdown).map(([k, v]) => (
-                      <span key={k} className={`text-[11px] px-2 py-0.5 rounded-md border ${
-                        v > 0 ? "border-up/30 text-up bg-up/10" : v < 0 ? "border-down/30 text-down bg-down/10" : "border-ink-500 text-mist-500"
-                      }`}>{k} {v > 0 ? `+${v}` : v}</span>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-            {ai.signal !== "wait" && (
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <Button onClick={() => setLogging(true)}>{t("log_this")}</Button>
-                {isQuick && !quickLogged && (
-                  <Button variant="primary" onClick={quickLogTrade} disabled={quickLogging}>
-                    {quickLogging ? t("thinking") : `⚡ ${t("quick_log")}`}
-                  </Button>
-                )}
-                {quickLogged && (
-                  <span className="text-up text-sm">✓ {t("trade_logged")}</span>
-                )}
-              </div>
-            )}
-          </Panel>
-        )}
-
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <Panel title={`${metal.label} · ${tf[0]}`} className="xl:col-span-2">
-            <SignalChart symbol={metal.tv} interval={tf[1]} height={380}
-              studies={NO_STUDIES} hideVolume />
-          </Panel>
-
-          <div className="flex flex-col gap-6">
-            {metal.group !== "metals" && (
-              <OrderBook symbol={metal.symbol} lastPrice={price} />
-            )}
-            <EconomicNewsPanel symbol={metal.symbol} />
-            {ai && ai.signal !== "wait" && (
-              <PriceLadder ai={ai} currentPrice={price} />
-            )}
-          </div>
-        </div>
-
-        {/* Same-symbol/timeframe OHLCV chart. Analysis levels are display-only. */}
-        <Panel title={t("analysis_chart_title")}>
-          <PositionChart symbol={metal.symbol} analysisMode analysis={ai} analysisTimeframe={tf[0]}
-            showSymbolPicker={false} height={420} storageKey="pc_tf_scalp" />
-        </Panel>
-
-
-        <Collapse title={`💼 ${t("sc_account_section")}`} defaultOpen>
-          <TradingAccountPanel balance={balance} defaultInitial={tradeInitial} refreshKey={tradesVersion} />
-        </Collapse>
-
-        <Collapse title={`📊 ${t("sc_backtest_section")}`}>
-          <BacktestPanel symbol={metal.symbol} timeframe={tf[0]} series={series} mode={scalpMode} />
         </Collapse>
       </div>
 
@@ -707,165 +660,36 @@ export default function Scalp() {
   );
 }
 
-function SignalHeadline({ ai }) {
+/** Old score-engine readings, kept for transparency inside "technical
+ *  details" and labelled: the 2026-10 study found no measurable edge in them. */
+function LegacyReadings({ ai }) {
   const { t } = useI18n();
-  const isWait = ai.signal === "wait";
-  const dir = ai.signal === "buy" ? "up" : ai.signal === "sell" ? "down" : "neutral";
-  const grade = ai.grade || { grade: "—", stars: 0 };
-  const score = ai.score ?? 0;
-
-  const headline = isWait ? t("wait_signal")
-    : ai.signal === "buy" ? (score >= 80 ? t("strong_buy") : t("buy_signal"))
-    : (score >= 80 ? t("strong_sell") : t("sell_signal"));
-  const dot = isWait ? "🟡" : ai.signal === "buy" ? "🟢" : "🔴";
-  const riskWord = score >= 80 ? t("risk_low") : score >= 65 ? t("risk_medium") : t("risk_high");
-
+  const bd = ai.score_breakdown;
   const pros = ai.reasons_plain?.pros || [];
   const cons = ai.reasons_plain?.cons || [];
-
-  const regime = ai.market_regime?.regime;
-  const setupClass = ai.setup_class;
-  const sessStars = ai.session_quality?.stars || 0;
-
+  if (!bd && !pros.length && !cons.length) return null;
   return (
-    <div>
-      {/* market context chips: regime · setup class · session quality */}
-      <div className="flex items-center gap-2 flex-wrap mb-3">
-        {regime && (
-          <span className="text-xs px-2 py-1 rounded-md bg-ink-800 text-mist-300">
-            {t("regime_label")}: <span className="text-mist-100">{t(`regime_${regime}`)}</span>
-          </span>
-        )}
-        {setupClass && !isWait && (
-          <span className="text-xs px-2 py-1 rounded-md bg-ink-800 text-mist-300">
-            {setupClass.emoji} {t(`setup_${setupClass.class}`)}
-          </span>
-        )}
-        {sessStars > 0 && (
-          <span className="text-xs px-2 py-1 rounded-md bg-ink-800 text-mist-400">
-            {ai.session_quality?.name} <span className="text-gold-soft">{"★".repeat(sessStars)}<span className="text-ink-500">{"★".repeat(5 - sessStars)}</span></span>
-          </span>
-        )}
-      </div>
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{dot}</span>
-          <div>
-            <p className={`text-xl font-bold ${dir === "up" ? "text-up" : dir === "down" ? "text-down" : "text-gold-soft"}`}>
-              {headline}
-            </p>
-            {!isWait && (
-              <p className="text-xs text-mist-500 mt-0.5">
-                {t("grade_label")}: <span className="text-mist-200 font-semibold">{grade.grade}</span>
-                {"  ·  "}{t("risk_level")}: {riskWord}
-              </p>
-            )}
-          </div>
-        </div>
-        {!isWait && (
-          <div className="text-end">
-            <div className="text-lg tracking-tight" title={`${score}/100`}>
-              {"★".repeat(grade.stars)}<span className="text-ink-500">{"★".repeat(5 - grade.stars)}</span>
-            </div>
-            <p className="text-xs text-mist-500 mt-0.5">{t("signal_strength_label")}: {score}/100
-              {typeof ai.conviction === "number" && (
-                <span className="ms-2">· {t("conviction")}: <span className={ai.conviction >= 40 ? "text-up" : "text-gold-soft"}>{ai.conviction}%</span></span>
-              )}
-            </p>
-            {ai.confidence_calibrated?.calibrated && (
-              <p className="text-xs text-up mt-0.5">
-                {t("real_confidence")}: {ai.confidence_calibrated.value}%
-                <span className="text-mist-600"> ({ai.confidence_calibrated.sample} {t("past_trades")})</span>
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* confidence meter bar */}
-      {!isWait && (
-        <div className="mt-3 h-2 rounded-full bg-ink-700 overflow-hidden">
-          <div className={`h-full rounded-full ${score >= 80 ? "bg-up" : score >= 65 ? "bg-gold" : "bg-down"}`}
-            style={{ width: `${Math.max(8, Math.min(100, score))}%` }} />
+    <div className="rounded-lg border border-ink-500 p-3 text-xs">
+      <p className="mb-2 text-mist-500">{t("sc_legacy_readings")}</p>
+      {typeof ai.score === "number" && (
+        <p className="mb-2 text-mist-300">{fill(t("sc_legacy_score"), { score: `${ai.score}/100`, conv: `${ai.conviction ?? "—"}%` })}</p>
+      )}
+      {bd && (
+        <div className="flex flex-wrap gap-1.5">
+          {Object.entries(bd).map(([k, v]) => (
+            <span key={k} className={`px-2 py-0.5 rounded-md border ${
+              v > 0 ? "border-up/30 text-up" : v < 0 ? "border-down/30 text-down" : "border-ink-500 text-mist-500"
+            }`}>{t(`bd_${k}`)} <bdi dir="ltr">{v > 0 ? `+${v}` : v}</bdi></span>
+          ))}
         </div>
       )}
-
-      {pros.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs text-mist-500 mb-1">{t("entry_reasons")}</p>
-          <ul className="space-y-1">
-            {pros.map((k) => (
-              <li key={k} className="text-sm text-mist-200 flex items-start gap-2">
-                <span className="text-up">✅</span><span>{t(`r_${k}`)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {cons.length > 0 && (
-        <div className="mt-3">
-          <p className="text-xs text-mist-500 mb-1">{t("risk_factors")}</p>
-          <ul className="space-y-1">
-            {cons.map((k) => (
-              <li key={k} className="text-sm text-mist-300 flex items-start gap-2">
-                <span className="text-down">⚠️</span><span>{t(`r_${k}`)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {(pros.length > 0 || cons.length > 0) && (
+        <ul className="mt-2 space-y-0.5 text-mist-400">
+          {pros.map((k) => <li key={k}>+ {t(`r_${k}`)}</li>)}
+          {cons.map((k) => <li key={k}>− {t(`r_${k}`)}</li>)}
+        </ul>
       )}
     </div>
-  );
-}
-
-// Exchange-style price ladder: a precise vertical price scale showing exactly
-// where the entry, each take-profit level, and the stop-loss sit relative to
-// the current price — the same information an exchange's order/price panel
-// gives you, without needing to draw lines on the chart widget itself.
-function PriceLadder({ ai, currentPrice }) {
-  const { t } = useI18n();
-  const isBuy = ai.signal === "buy";
-  const cur = currentPrice ?? ai.entry;
-
-  const rows = [];
-  if (ai.tp_levels && ai.tp_levels.length) {
-    ai.tp_levels.forEach((lv, i) => rows.push({ key: `tp${i + 1}`, label: `TP${i + 1}`, price: lv.price, pct: lv.pct, tone: "up" }));
-  } else if (ai.take_profit) {
-    rows.push({ key: "tp", label: "TP", price: ai.take_profit, tone: "up" });
-  }
-  rows.push({ key: "entry", label: t("entry"), price: ai.entry, tone: "info", isEntry: true });
-  if (ai.stop_loss) rows.push({ key: "sl", label: "SL", price: ai.stop_loss, tone: "down" });
-
-  // sort by price so it reads top-to-bottom like a real order book / price ladder
-  rows.sort((a, b) => (isBuy ? b.price - a.price : a.price - b.price));
-
-  return (
-    <Panel title={t("price_ladder")}>
-      <div className="space-y-1">
-        {rows.map((r) => {
-          const dist = ai.entry ? ((r.price - cur) / cur) * 100 : 0;
-          return (
-            <div key={r.key} className={`flex items-center justify-between px-2.5 py-2 rounded-lg text-sm ${
-              r.isEntry ? "bg-info/10 border border-info/30" : r.tone === "up" ? "bg-up/5" : "bg-down/5"
-            }`}>
-              <span className={`text-xs font-medium ${r.tone === "up" ? "text-up" : r.tone === "down" ? "text-down" : "text-info"}`}>
-                {r.label}{r.pct ? ` · ${r.pct}%` : ""}
-              </span>
-              <span className="tnum text-mist-100 font-semibold">{fmtPrice(r.price)}</span>
-              <span className={`tnum text-[11px] ${dist >= 0 ? "text-up" : "text-down"}`}>
-                {dist >= 0 ? "+" : ""}{dist.toFixed(2)}%
-              </span>
-            </div>
-          );
-        })}
-        {Number.isFinite(cur) && (
-          <div className="flex items-center justify-between px-2.5 py-1.5 mt-1 border-t border-dashed border-ink-500">
-            <span className="text-[11px] text-mist-500">{t("current_price")}</span>
-            <span className="tnum text-gold-soft font-semibold">{fmtPrice(cur)}</span>
-          </div>
-        )}
-      </div>
-    </Panel>
   );
 }
 
@@ -1035,13 +859,13 @@ function RiskBar({ balance, riskPct, onSave, source }) {
 function SymbolPicker({ current, onPick, access = {} }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [group, setGroup] = useState(current.group || "metals");
+  const [group, setGroup] = useState(current.group || "futures");
   const [query, setQuery] = useState("");
   // groups the admin disabled for this user simply don't exist here
   const groups = [
-    ["metals", t("grp_metals")],
-    ["spot", t("grp_spot")],
     ["futures", t("grp_futures")],
+    ["spot", t("grp_spot")],
+    ["metals", t("grp_metals")],
   ].filter(([g]) => access[g] !== false);
   useEffect(() => {
     if (access[group] === false && groups.length) setGroup(groups[0][0]);
@@ -1134,10 +958,9 @@ function ExecuteOrder({ symbol, action, sl, tp, suggestedQty }) {
     } finally { setBusy(false); }
   }
 
-  // Crypto execution needs an exchange connection (LBank/Binance) — not wired yet.
-  if (isCrypto) {
-    return <p className="text-xs text-mist-500 mt-2">🔌 {t("crypto_exec_soon")}</p>;
-  }
+  // Crypto orders go through the order ticket above (Bitunix demo/real);
+  // this MT5 path is for metals only.
+  if (isCrypto) return null;
   if (connected === false) {
     return <p className="text-xs text-mist-500 mt-2">{t("mt5_not_connected")}</p>;
   }
@@ -1229,44 +1052,22 @@ function AlertsToggle() {
 }
 
 
-/** Replace {key} placeholders with bidi-isolated (LTR) values — numbers and
- *  "3R" inside Persian sentences otherwise get reordered by the browser. */
-function fill(template, values) {
-  return template.split(/(\{\w+\})/).map((part, i) => {
-    const m = /^\{(\w+)\}$/.exec(part);
-    return m && m[1] in values ? <bdi key={i} dir="ltr">{values[m[1]]}</bdi> : part;
-  });
-}
-
 function PlaybookCard({ ai, timeframe }) {
   const { t } = useI18n();
-  const plan = ai.entry_plan;
   const exit = ai.exit_plan;
   const ev = ai.playbook?.evidence;
   return (
-    <div className="rounded-lg border border-up/30 bg-up/[0.06] p-3 text-xs leading-relaxed text-mist-300 space-y-1.5">
-      <p className="text-sm font-semibold text-up">✓ {t("pb_title")} · {timeframe}</p>
-      {ai.signal !== "wait" && plan ? (
-        <>
-          <p>{fill(t("pb_limit_line"), { price: plan.price, bars: plan.valid_for_bars, min: plan.valid_for_minutes })}</p>
-          {exit && <p>{fill(t("pb_exit_line"), { r: `${exit.target_r}R`, bars: exit.max_hold_bars,
-            hours: Math.round(exit.max_hold_minutes / 60) })}</p>}
-          <p className="text-mist-500">{t("pb_no_chase")}</p>
-        </>
-      ) : (
-        <p>{t("pb_waiting")}: {(ai.wait_reasons || [])[0]?.message || ai.reason}</p>
-      )}
+    <div className="rounded-lg border border-up/25 bg-up/[0.05] p-3 text-xs leading-relaxed text-mist-300 space-y-2">
+      {exit && <p>⏱ {fill(t("pb_exit_line"), { r: `${exit.target_r}R`, bars: exit.max_hold_bars,
+        hours: Math.round(exit.max_hold_minutes / 60) })}</p>}
       {ev && (
-        <>
-          <p className="text-mist-500">{t("pb_evidence_title")}</p>
-          <div className="grid grid-cols-3 gap-2">
-            <EvidenceCell ltr label={t("bt_ev_years_pos")} value={ev.positive_years} tone="up" />
-            <EvidenceCell ltr label={t("bt_ev_period_holdout")} value={`+${ev.expectancy_r?.holdout}R`} tone="up" />
-            <EvidenceCell ltr label={t("bt_ev_tpy")} value={`≈${ev.trades_per_year}`} />
-          </div>
-        </>
+        <div className="grid grid-cols-3 gap-2">
+          <EvidenceCell ltr label={t("bt_ev_years_pos")} value={ev.positive_years} tone="up" />
+          <EvidenceCell ltr label={t("bt_ev_period_holdout")} value={`+${ev.expectancy_r?.holdout}R`} tone="up" />
+          <EvidenceCell ltr label={t("bt_ev_tpy")} value={`≈${ev.trades_per_year}`} />
+        </div>
       )}
-      {ai.strategy_note && <p className="text-gold-soft">{ai.strategy_note}</p>}
+      {ev && <p className="text-[11px] text-mist-500">{t("pb_evidence_title")} · {timeframe}</p>}
     </div>
   );
 }
