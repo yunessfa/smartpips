@@ -1,3 +1,5 @@
+import BacktestEvidence from "../components/BacktestEvidence.jsx";
+import { barsFor } from "../lib/backtestPeriods.js";
 import { BacktestReasons } from "../components/BacktestReasons.jsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "../components/Layout.jsx";
@@ -53,6 +55,9 @@ export default function Strategies() {
   const [editing, setEditing] = useState(null); // draft object or null
   const [busyId, setBusyId] = useState(null);
   const [backtestEngine, setBacktestEngine] = useState("native");
+  const [btPeriod, setBtPeriod] = useState(() => {
+    try { return localStorage.getItem("sp_bt_period") || "medium"; } catch { return "medium"; }
+  });
   const [backtest, setBacktest] = useState(null); // { strategy, result }
 
   const load = useCallback(async () => {
@@ -98,7 +103,9 @@ export default function Strategies() {
     setBusyId(strategy.id);
     setErr(null);
     try {
-      const result = await strategyApi.runStrategyBacktest(strategy.id, { engine: backtestEngine });
+      const tf = (strategy.timeframes || [])[0] || "5m";
+      const result = await strategyApi.runStrategyBacktest(strategy.id, {
+        engine: backtestEngine, bars: barsFor(tf, btPeriod) });
       setBacktest({ strategy, result });
       await load();
     } catch (e) {
@@ -150,8 +157,8 @@ export default function Strategies() {
                   {t(`st_market_${active.market}`)} · {t(`st_dir_${active.direction}`)} ·{" "}
                   {t("st_min_conf")} {active.current?.min_confidence ?? "—"}%
                 </p>
-                <p className={`mt-1 text-xs ${active.current?.risk?.signal_source === "strategy" ? "text-gold-soft" : "text-mist-500"}`}>
-                  {active.current?.risk?.signal_source === "strategy" ? t("st_source_strategy_short") : t("st_source_filter_short")}
+                <p className={`mt-1 text-xs ${sourceTone(active.current?.risk?.signal_source)}`}>
+                  {sourceLabel(t, active.current?.risk?.signal_source)}
                 </p>
               </div>
               <Button
@@ -201,20 +208,33 @@ export default function Strategies() {
         <Panel title={t("st_presets")}>
           <p className="mb-3 text-xs text-mist-500">{t("st_presets_hint")}</p>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {presets.map((s) => (
-              <div key={s.id} className="rounded-xl border border-ink-500 bg-ink-800/60 p-3.5">
+            {[...presets].sort((a, b) => (isPlaybook(b) ? 1 : 0) - (isPlaybook(a) ? 1 : 0)).map((s) => (
+              <div key={s.id} className={`rounded-xl border p-3.5 ${isPlaybook(s)
+                ? "border-up/40 bg-up/[0.05]" : "border-ink-500 bg-ink-800/60"}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-sm font-semibold text-mist-100">{s.name}</p>
-                  <Badge>{t(`st_market_${s.market}`)}</Badge>
+                  <p className="min-w-0 truncate text-sm font-semibold text-mist-100">
+                    {isPlaybook(s) ? t("preset_trend_pullback_name") : s.name}
+                  </p>
+                  <Badge tone={isPlaybook(s) ? "up" : undefined}>
+                    {isPlaybook(s) ? t("st_validated") : t(`st_market_${s.market}`)}
+                  </Badge>
                 </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-mist-500">{s.description}</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-mist-500">
+                  {isPlaybook(s) ? t("preset_trend_pullback_desc") : s.description}
+                </p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] text-mist-500">
-                  <span className="rounded border border-ink-500 px-1.5 py-0.5">
-                    {t("st_min_conf")} {s.current?.min_confidence}%
-                  </span>
-                  <span className="rounded border border-ink-500 px-1.5 py-0.5">
-                    {(s.current?.rules || []).length} {t("st_rules")}
-                  </span>
+                  {isPlaybook(s) ? (
+                    <span className="rounded border border-up/40 px-1.5 py-0.5 text-up">{t("st_source_playbook_short")}</span>
+                  ) : (
+                    <>
+                      <span className="rounded border border-ink-500 px-1.5 py-0.5">
+                        {t("st_min_conf")} {s.current?.min_confidence}%
+                      </span>
+                      <span className="rounded border border-ink-500 px-1.5 py-0.5">
+                        {(s.current?.rules || []).length} {t("st_rules")}
+                      </span>
+                    </>
+                  )}
                   <span className="rounded border border-ink-500 px-1.5 py-0.5">
                     {(s.timeframes || []).join(" · ")}
                   </span>
@@ -245,6 +265,17 @@ export default function Strategies() {
             <option value="native">SmartPips — native (default)</option>
             <option value="backtesting">backtesting.py — optional research only</option>
           </select>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-mist-500">{t("bt_period")}:</span>
+            {["short", "medium", "long"].map((p) => (
+              <button key={p} type="button"
+                onClick={() => { setBtPeriod(p); try { localStorage.setItem("sp_bt_period", p); } catch { /* ignore */ } }}
+                className={`rounded-md border px-2 py-1 ${btPeriod === p ? "border-gold/50 bg-gold/10 text-gold-soft" : "border-ink-500 text-mist-500"}`}>
+                {t(`bt_period_${p}`)}
+              </button>
+            ))}
+            <span className="text-mist-600">{t("bt_period_strategy_hint")}</span>
+          </div>
           <p className="mt-2 text-xs text-mist-500">{isRTL ? "موتور اختیاری نیازمند نصب جداگانه است؛ نتیجهٔ آن مجوز فعال‌سازی استراتژی نیست." : "Optional engine requires separate installation and cannot unlock strategy activation."}</p>
         </Panel>
         {/* --------------------------------------------------- analytics */}
@@ -344,9 +375,10 @@ function StrategyCard({ strategy, busy, onEdit, onBacktest, onActivate, onDeacti
         <span className="rounded border border-ink-500 px-1.5 py-0.5 text-mist-500">
           {t("st_min_conf")} {current.min_confidence ?? "—"}%
         </span>
-        <span className={`rounded border px-1.5 py-0.5 ${current.risk?.signal_source === "strategy"
+        <span className={`rounded border px-1.5 py-0.5 ${current.risk?.signal_source === "playbook"
+          ? "border-up/40 text-up" : current.risk?.signal_source === "strategy"
           ? "border-gold/40 text-gold-soft" : "border-ink-500 text-mist-500"}`}>
-          {current.risk?.signal_source === "strategy" ? t("st_source_strategy_short") : t("st_source_filter_short")}
+          {sourceLabel(t, current.risk?.signal_source)}
         </span>
         <span
           className={`rounded border px-1.5 py-0.5 ${
@@ -741,8 +773,9 @@ function BuilderModal({ draft, vocab, isRTL, onClose, onSaved }) {
         {/* ------------------------------------------------ signal source */}
         <div className="mt-5">
           <h4 className="mb-2 text-xs font-semibold text-mist-500">{t("st_source_title")}</h4>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             {[
+              ["playbook", t("st_source_playbook"), t("st_source_playbook_hint")],
               ["engine_filter", t("st_source_filter"), t("st_source_filter_hint")],
               ["strategy", t("st_source_strategy"), t("st_source_strategy_hint")],
             ].map(([key, label, hint]) => {
@@ -818,6 +851,22 @@ function BuilderModal({ draft, vocab, isRTL, onClose, onSaved }) {
   );
 }
 
+function isPlaybook(strategy) {
+  return strategy?.current?.risk?.signal_source === "playbook";
+}
+
+function sourceLabel(t, source) {
+  if (source === "playbook") return t("st_source_playbook_short");
+  if (source === "strategy") return t("st_source_strategy_short");
+  return t("st_source_filter_short");
+}
+
+function sourceTone(source) {
+  if (source === "playbook") return "text-up";
+  if (source === "strategy") return "text-gold-soft";
+  return "text-mist-500";
+}
+
 /* -------------------------------------------------------------- backtest */
 
 function BacktestModal({ data, onClose }) {
@@ -882,10 +931,12 @@ function BacktestModal({ data, onClose }) {
           {rows.map(([label, value]) => (
             <div key={label} className="rounded-lg border border-ink-500 bg-ink-700/40 p-2">
               <p className="text-[10px] uppercase tracking-wide text-mist-500">{label}</p>
-              <p className="tnum mt-0.5 text-sm text-mist-100">{value ?? "—"}</p>
+              <p className="tnum mt-0.5 text-sm text-mist-100"><bdi dir="ltr">{value ?? "—"}</bdi></p>
             </div>
           ))}
         </div>
+
+        <BacktestEvidence result={result} />
 
         {curve.length > 1 && <EquityCurve points={curve} />}
 

@@ -48,6 +48,8 @@ def apply_strategy(decision, strategy, version, symbol, timeframe, candles=None)
         return decision
     if risk.get("signal_source") == "strategy":
         return _finish(_standalone(decision, version, symbol, timeframe, candles, risk), risk)
+    if risk.get("signal_source") == "playbook":
+        return _finish(_playbook(decision, version, risk), risk)
 
     assessment = evaluate(version, decision)
     decision["strategy_evaluation"] = assessment
@@ -62,6 +64,34 @@ def apply_strategy(decision, strategy, version, symbol, timeframe, candles=None)
             decision.update(signal="wait", confidence="low", reason="Below active strategy minimum R:R.")
     decision["strategy_policy"] = "Filter on the base engine; never bypasses its safety gates."
     return _finish(decision, risk)
+
+
+def _playbook(decision, version, risk):
+    """Validated playbook decides; the strategy's own rules may only veto it."""
+    decision["strategy_policy"] = ("Validated trend-pullback playbook decides direction and levels; "
+                                   "this strategy's rules can only veto. Safety gates remain active.")
+    if decision.get("signal_source") != "playbook":
+        # The caller did not run the playbook (e.g. an old code path): never
+        # let the base engine's plan pass as a playbook signal.
+        decision.update(signal="wait", confidence="low", entry=None, stop_loss=None, take_profit=None,
+                        entry_plan=None, reason="Playbook strategy: playbook was not evaluated.")
+        return decision
+    if not version.rules:
+        decision["strategy_evaluation"] = {
+            "signal": str(decision.get("signal") or "wait").upper(), "code": "playbook_only",
+            "confidence": None, "checks": [], "strategy": version.strategy.name, "version": version.version,
+            "reason": "No extra rules: the validated playbook alone decides."}
+        return decision
+    assessment = evaluate(version, decision)
+    decision["strategy_evaluation"] = assessment
+    if decision.get("signal") in ("buy", "sell"):
+        if assessment.get("code") == "invalid_strategy_config" or \
+                str(assessment.get("signal", "")).lower() != decision["signal"]:
+            decision.update(signal="wait", confidence="low", entry=None, stop_loss=None, take_profit=None,
+                            entry_plan=None, reason=f"Playbook vetoed by your rules: {assessment.get('reason')}")
+        elif (decision.get("risk_reward") or 0) < risk.get("min_rr", 0):
+            decision.update(signal="wait", confidence="low", reason="Below active strategy minimum R:R.")
+    return decision
 
 
 def _standalone(decision, version, symbol, timeframe, candles, risk):

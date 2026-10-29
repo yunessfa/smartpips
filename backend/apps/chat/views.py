@@ -194,6 +194,9 @@ def scalp_signal(request):
         return Response({"error": "Price, balance and risk must be positive finite numbers."}, status=400)
     if timeframe not in ("1m", "5m", "15m", "1h", "4h"):
         return Response({"error": "Unsupported timeframe."}, status=400)
+    mode = str(request.data.get("mode") or "safe").lower()
+    if mode not in ("safe", "aggressive", "trend"):
+        return Response({"error": "mode must be safe, aggressive or trend."}, status=400)
 
     # The central Decision Engine runs the WHOLE pipeline (data -> structure ->
     # liquidity -> order-flow -> session -> score -> news guard -> risk sizing).
@@ -204,7 +207,7 @@ def scalp_signal(request):
                       live_price=float(price),
                       balance=request.data.get("balance"),
                       risk_pct=request.data.get("risk_pct"),
-                      mode=request.data.get("mode") or "safe")
+                      mode=mode)
 
     decision["symbol"] = symbol
     decision["timeframe"] = timeframe

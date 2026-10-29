@@ -56,6 +56,8 @@ class AuthTests(APITestCase):
 
 class RefreshTests(APITestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()  # login throttle (8/min) is cache-backed; isolate tests
         self.user = User.objects.create_user("renew", password="pass1234")
 
     def sign_in(self):

@@ -297,8 +297,9 @@ export const strategyApi = {
   updateChannel: (id, data) => api.patch(`/strategy/telegram/${id}/`, data),
   removeChannel: (id) => api.del(`/strategy/telegram/${id}/`),
   previewChannel: (id) => api.post(`/strategy/telegram/${id}/preview/`, {}),
-  backtest: (symbol, timeframe, tickSeries) =>
-    api.post(`/strategy/backtest/`, { symbol, timeframe, tick_series: tickSeries || [] }),
+  backtest: (symbol, timeframe, tickSeries, opts = {}) =>
+    api.post(`/strategy/backtest/`, { symbol, timeframe, tick_series: tickSeries || [],
+      ...(opts.mode ? { mode: opts.mode } : {}), ...(opts.bars ? { bars: opts.bars } : {}) }),
 
   // ---- configurable strategies (presets + user-built) ----
   // These sit on top of the existing engine; the engine endpoints above are

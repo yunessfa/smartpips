@@ -30,8 +30,22 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
 
     symbol = symbol.upper()
 
+    # Which signal source? The validated trend-pullback playbook runs when the
+    # caller asks for it explicitly (Scalp page mode "trend") or when the
+    # user's ACTIVE strategy is a playbook strategy (alerts follow it too).
+    strategy = version = None
+    if user is not None:
+        from .config_models import Strategy
+        strategy = Strategy.objects.filter(user=user, is_active=True, archived=False).first()
+        version = strategy.current_version() if strategy else None
+    playbook = mode == "trend" or bool(
+        version and (version.risk or {}).get("signal_source") == "playbook")
+    engine_mode = "safe" if mode == "trend" else mode
+    from . import trend_pullback
+    tf_limit = trend_pullback.LIVE_FETCH_BARS if playbook else 300
+
     # 1) DATA — real candles first (broker via candles.py), tick fallback handled below
-    tf_candles = fetch_candles(symbol, timeframe, limit=300)
+    tf_candles = fetch_candles(symbol, timeframe, limit=tf_limit)
     data_quality = "candles"
 
     if not tf_candles and tick_series:
@@ -68,9 +82,13 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
 
     htf_map = {}
     stale_htf = []
+    htf_labels = list(HTF.get(timeframe, []))
+    if playbook:
+        htf_labels += [x for x in ("4h", "1h")
+                       if x not in htf_labels and TF_SECONDS[x] > TF_SECONDS.get(timeframe, 300)]
     if data_quality == "candles":
-        for label in HTF.get(timeframe, []):
-            hc = fetch_candles(symbol, label, limit=200)
+        for label in htf_labels:
+            hc = fetch_candles(symbol, label, limit=trend_pullback.LIVE_FETCH_BARS if playbook else 200)
             if hc:
                 htf_step = TF_SECONDS[label]
                 clean, htf_quality = inspect_bars(hc, htf_step, _clock.time(),
@@ -100,8 +118,18 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
                     "wait_reasons": [{"code": "price_mismatch",
                                       "message": f"live {price} vs last close {last_close}"}]}
 
-    # 2) STRATEGY ENGINE decides
-    decision = run_strategy(symbol, timeframe, tf_candles, htf_map, live_price=price, mode=mode)
+    # 2) STRATEGY ENGINE decides (same 300-bar / 200-HTF-bar view as always;
+    #    the playbook only needs the longer series for converged EMA200s)
+    engine_htf = {k: v[-200:] for k, v in htf_map.items() if k in HTF.get(timeframe, [])}
+    decision = run_strategy(symbol, timeframe, tf_candles[-300:], engine_htf, live_price=price,
+                            mode=engine_mode)
+    if playbook and data_quality == "candles":
+        trend_pullback.apply(decision, symbol, timeframe, tf_candles,
+                             {k: htf_map.get(k) or [] for k in ("4h", "1h")})
+        if stale_htf and decision.get("signal") in ("buy", "sell"):
+            decision.update(signal="wait", confidence="low", entry=None, stop_loss=None, take_profit=None,
+                            entry_plan=None, reason="Trend pullback: higher-timeframe feed is stale.",
+                            wait_reasons=[{"code": "stale_htf", "message": ", ".join(stale_htf)}])
     decision["data_quality"] = decision.get("data_quality", data_quality)
     decision.setdefault("timeframe", timeframe)
     if stale_htf:
@@ -113,13 +141,15 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
     decision["price_at_signal"] = price
 
     # Apply the selected configuration to the SAME plan used by alerts and chat.
-    if user is not None:
-        from .config_models import Strategy
+    # An explicit "trend" request is the playbook alone; a playbook STRATEGY
+    # keeps its own rules as extra vetoes (selection.apply_strategy).
+    if strategy is not None and not (mode == "trend" and not (
+            version and (version.risk or {}).get("signal_source") == "playbook")):
         from .selection import apply_strategy
-        strategy = Strategy.objects.filter(user=user, is_active=True, archived=False).first()
-        if strategy:
-            apply_strategy(decision, strategy, strategy.current_version(), symbol, timeframe,
-                           candles=tf_candles)
+        apply_strategy(decision, strategy, version, symbol, timeframe, candles=tf_candles[-300:])
+    elif strategy is not None:
+        decision["strategy_note"] = ("Trend-pullback mode was selected explicitly; your active "
+                                     "strategy's rules were not applied to this signal.")
     # Tick-shaped pseudo-candles cannot establish volume/structure reliably.
     if data_quality == "ticks":
         decision.update(signal="wait", confidence="low", data_quality="ticks",

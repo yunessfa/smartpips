@@ -112,7 +112,8 @@ SL_METHODS = ["atr", "structure", "fixed_pct"]
 #   engine_filter — the base engine proposes, the strategy can only veto (default, legacy)
 #   strategy      — the strategy's own rules pick the direction; the engine still
 #                   provides readings, data-quality/news/risk gates and the scalp plan
-SIGNAL_SOURCES = ["engine_filter", "strategy"]
+SIGNAL_SOURCES = ["engine_filter", "strategy", "playbook"]
+PLAYBOOKS = ["trend_pullback"]
 
 
 class RuleError(ValueError):
@@ -145,6 +146,7 @@ def vocabulary():
         "tp_methods": TP_METHODS,
         "sl_methods": SL_METHODS,
         "signal_sources": SIGNAL_SOURCES,
+        "playbooks": PLAYBOOKS,
         "risk_fields": {
             name: {"type": typ.__name__, "min": lo, "max": hi}
             for name, (typ, lo, hi) in RISK_FIELDS.items()
@@ -276,6 +278,8 @@ def validate_risk(risk):
     if not isinstance(risk, dict):
         raise RuleError("Risk settings must be an object.")
     cleaned = {}
+    if risk.get("signal_source") == "playbook" and "playbook" not in risk:
+        risk = {**risk, "playbook": "trend_pullback"}
     for field, value in risk.items():
         if field == "tp_method":
             if value not in TP_METHODS:
@@ -285,6 +289,11 @@ def validate_risk(risk):
         if field == "signal_source":
             if value not in SIGNAL_SOURCES:
                 raise RuleError(f"signal_source must be one of {SIGNAL_SOURCES}.")
+            cleaned[field] = value
+            continue
+        if field == "playbook":
+            if value not in PLAYBOOKS:
+                raise RuleError(f"playbook must be one of {PLAYBOOKS}.")
             cleaned[field] = value
             continue
         if field == "sl_method":

@@ -7,6 +7,8 @@ from apps.trades.models import Trade
 
 class TradeTests(APITestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()  # login throttle (8/min) is cache-backed; isolate tests
         self.user = User.objects.create_user("trader", password="pass1234")
         login = self.client.post(
             reverse("login"), {"username": "trader", "password": "pass1234"}

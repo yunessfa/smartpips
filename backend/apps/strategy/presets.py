@@ -268,6 +268,21 @@ PRESETS.append({
     "risk": {"risk_per_trade_pct": 0.25, "max_leverage": 3, "max_open_positions": 2, "min_rr": 1.5},
 })
 
+# The one configuration with multi-year out-of-sample evidence (see
+# trend_pullback.RESEARCH). It is a playbook: the levels come from the
+# validated rules, not from the confluence score.
+PRESETS.append({
+    "key": "trend_pullback", "name": "Trend Pullback (validated)",
+    "description": ("4h trend + stacked EMAs; after a >1 ATR push, a LIMIT waits at EMA21; stop 1.5 ATR "
+                    "(min 0.4%), one target (3R on 1h, 2.5R on 5m/15m). Positive in all 8 years of "
+                    "BTC 2019-2026 after costs; 1h is the most robust."),
+    "market": "crypto", "timeframes": ["1h", "15m", "5m"], "direction": "both",
+    "min_confidence": 0, "weights": {}, "rules": [],
+    "risk": {"risk_per_trade_pct": 0.5, "max_leverage": 5, "max_open_positions": 2,
+             "min_rr": 2.0, "signal_source": "playbook", "playbook": "trend_pullback",
+             "tp_method": "fixed_rr", "sl_method": "atr"},
+})
+
 PRESETS_BY_KEY = {preset["key"]: preset for preset in PRESETS}
 
 

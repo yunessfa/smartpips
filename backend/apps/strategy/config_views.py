@@ -243,7 +243,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             return Response({"error": "This strategy has no configuration yet."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        from .backtest_data import backtest_inputs, historical_window
+        from .backtest_data import backtest_inputs, run_backtest_request
         from .backtest_runner import run_selected as run_backtest
         from .rule_schema import RuleError, validate_rules, validate_weights, validate_risk
         try:
@@ -253,12 +253,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
         except RuleError as exc:
             return Response({"error": str(exc), "code": "invalid_strategy_config"}, status=400)
         symbol, timeframe = backtest_inputs(request.data, strategy)
-        candles, data_info = historical_window(symbol, timeframe, with_diagnostics=True)
-        result = run_backtest(symbol, candles, source=request.data, warmup=60, timeframe=timeframe, version=current)
+        result = run_backtest_request(request.data, symbol, timeframe, current, run_backtest, warmup=60)
         result["symbol"] = symbol
         result["timeframe"] = timeframe
-        result["candles_used"] = len(candles)
-        result["data_diagnostics"] = data_info
         result["min_confidence"] = current.min_confidence
         result["strategy"] = strategy.name
         result["version"] = current.version

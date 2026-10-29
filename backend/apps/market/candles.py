@@ -559,3 +559,95 @@ def fetch_candles(symbol: str, timeframe: str = "5m", limit: int = 200):
         return _cache_put(cache_key, mt5[-limit:], timeframe)
 
     return _cache_put(cache_key, [], "1m")
+
+
+# ------------------------------------------------------------------ history
+HISTORY_MAX_BARS = 20000
+HISTORY_TIME_BUDGET_S = 45.0
+HISTORY_CACHE_TTL_S = 600
+
+
+def _page_back(fetch_page, bars, page_size, budget_s):
+    """Generic backwards pagination: fetch_page(end_ms) -> ascending rows."""
+    started = time.monotonic()
+    out = fetch_page(None) or []
+    pages = 1
+    partial = False
+    while len(out) < bars and out:
+        if time.monotonic() - started > budget_s:
+            partial = True
+            break
+        older = fetch_page(int(out[0]["time"]) * 1000 - 1) or []
+        older = [c for c in older if c["time"] < out[0]["time"]]
+        if not older:
+            break
+        out = older + out
+        pages += 1
+        time.sleep(0.05)  # stay far below public rate limits
+    seen, rows = set(), []
+    for c in out:
+        if c["time"] not in seen:
+            seen.add(c["time"])
+            rows.append(c)
+    return rows[-bars:], {"pages": pages, "partial_by_time_budget": partial}
+
+
+def fetch_history(symbol, timeframe="5m", bars=5000, budget_s=HISTORY_TIME_BUDGET_S):
+    """Long OHLCV history for BACKTESTS (closed and open bars, oldest->newest).
+
+    The live chart/engine path (`fetch_candles`) only ever needs a few hundred
+    bars; a backtest of a few hundred bars is statistically meaningless (a
+    handful of trades). This pages backwards through the same venues:
+    Bitunix for ':PERP' symbols, then Binance. Metals keep the short window
+    their providers offer. Returns (rows, info).
+    """
+    from django.core.cache import cache
+    symbol = symbol.upper()
+    bars = max(1, min(int(bars), HISTORY_MAX_BARS))
+    base = symbol.replace(":PERP", "")
+    ckey = f"hist:{symbol}:{timeframe}:{bars}"
+    hit = cache.get(ckey)
+    if hit:
+        return hit["rows"], {**hit["info"], "cached": True}
+
+    rows, info = [], {"source": None}
+    if base in _CRYPTO:
+        if symbol.endswith(":PERP"):
+            try:
+                from apps.bitunix.client import BitunixClient
+                client = BitunixClient()
+                rows, meta = _page_back(lambda end: client.klines(base, timeframe, 200, end_time=end),
+                                        bars, 200, budget_s)
+                info = {"source": "bitunix", **meta}
+            except Exception:
+                log.exception("bitunix history failed for %s %s", symbol, timeframe)
+                rows = []
+        if not rows:
+            is_perp = symbol.endswith(":PERP")
+            host = ("https://fapi.binance.com/fapi/v1/klines" if is_perp
+                    else "https://api.binance.com/api/v3/klines")
+            interval = _BINANCE_INTERVAL.get(timeframe, "5m")
+
+            def page(end_ms):
+                params = {"symbol": base, "interval": interval, "limit": 1000}
+                if end_ms is not None:
+                    params["endTime"] = end_ms
+                try:
+                    r = requests.get(host, params=params, timeout=8)
+                    r.raise_for_status()
+                    return [{"time": int(k[0] // 1000), "open": float(k[1]), "high": float(k[2]),
+                             "low": float(k[3]), "close": float(k[4]), "volume": float(k[5])}
+                            for k in r.json()]
+                except (requests.RequestException, ValueError, KeyError, IndexError, TypeError):
+                    return []
+            rows, meta = _page_back(page, bars, 1000, budget_s)
+            info = {"source": "binance_futures" if is_perp else "binance_spot", **meta}
+    else:
+        rows = fetch_candles(symbol, timeframe, min(bars, 500))
+        info = {"source": LAST_SOURCE.get(f"{symbol}:{timeframe}"), "pages": 1,
+                "note": "metals providers only expose a short window"}
+    info["requested_bars"] = bars
+    info["received_bars"] = len(rows)
+    if rows:
+        cache.set(ckey, {"rows": rows, "info": info}, HISTORY_CACHE_TTL_S)
+    return rows, info

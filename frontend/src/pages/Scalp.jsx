@@ -1,5 +1,7 @@
 import { DecisionAudit } from "../components/DecisionAudit.jsx";
 import { BacktestReasons } from "../components/BacktestReasons.jsx";
+import BacktestEvidence, { Cell as EvidenceCell } from "../components/BacktestEvidence.jsx";
+import { BT_PERIODS, barsFor } from "../lib/backtestPeriods.js";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { PageHeader } from "../components/Layout.jsx";
 import { Panel, Badge, Button, Spinner } from "../components/ui.jsx";
@@ -515,10 +517,12 @@ export default function Scalp() {
                 {autoRefresh ? `● ${t("auto_on")}` : `○ ${t("auto_off")}`}
               </button>
               <div className="flex items-center gap-1 bg-ink-800 rounded-lg p-0.5">
-                {[["safe", t("mode_safe")], ["aggressive", t("mode_aggressive")]].map(([m, label]) => (
-                  <button key={m} onClick={() => switchMode(m)}
-                    className={`text-xs px-2.5 py-1 rounded-md ${scalpMode === m ? "bg-ink-600 text-mist-100" : "text-mist-500 hover:text-mist-300"}`}>
-                    {label}
+                {[["trend", t("mode_trend")], ["safe", t("mode_safe")], ["aggressive", t("mode_aggressive")]].map(([m, label]) => (
+                  <button key={m} onClick={() => switchMode(m)} title={m === "trend" ? t("mode_trend_hint") : undefined}
+                    className={`text-xs px-2.5 py-1 rounded-md ${scalpMode === m
+                      ? (m === "trend" ? "bg-up/20 text-up" : "bg-ink-600 text-mist-100")
+                      : "text-mist-500 hover:text-mist-300"}`}>
+                    {m === "trend" ? `✓ ${label}` : label}
                   </button>
                 ))}
               </div>
@@ -530,10 +534,15 @@ export default function Scalp() {
         </div>
 
         {ai && <div className="text-sm text-mist-300 border border-ink-500 rounded-lg p-3 space-y-1">
-          <p>{ai.strategy_name ? `${ai.strategy_name} · v${ai.strategy_version}` : "SmartPips base engine"}</p>
+          <p>{ai.strategy_name ? `${ai.strategy_name} · v${ai.strategy_version}`
+            : ai.signal_source === "playbook" ? t("pb_title") : "SmartPips base engine"}</p>
           {ai.strategy_evaluation && <p>{ai.strategy_evaluation.reason}</p>}
           {ai.risk_settings_not_executed?.length > 0 && <p>{t("strategy_filter_notice")}</p>}
         </div>}
+        {scalpMode === "trend" && !["5m", "15m", "1h"].includes(tf[0]) && (
+          <div className="text-xs text-gold-soft bg-gold/10 border border-gold/30 rounded-lg px-3 py-2">{t("pb_tf_hint")}</div>
+        )}
+        {ai?.signal_source === "playbook" && <PlaybookCard ai={ai} timeframe={tf[0]} />}
         {aiError && (
           <div className="text-down text-sm bg-down/10 border border-down/30 rounded-lg px-3 py-2">{aiError}</div>
         )}
@@ -676,7 +685,7 @@ export default function Scalp() {
         </Collapse>
 
         <Collapse title={`📊 ${t("sc_backtest_section")}`}>
-          <BacktestPanel symbol={metal.symbol} timeframe={tf[0]} series={series} />
+          <BacktestPanel symbol={metal.symbol} timeframe={tf[0]} series={series} mode={scalpMode} />
         </Collapse>
       </div>
 
@@ -1219,8 +1228,52 @@ function AlertsToggle() {
   );
 }
 
-function BacktestPanel({ symbol, timeframe, series }) {
+
+/** Replace {key} placeholders with bidi-isolated (LTR) values — numbers and
+ *  "3R" inside Persian sentences otherwise get reordered by the browser. */
+function fill(template, values) {
+  return template.split(/(\{\w+\})/).map((part, i) => {
+    const m = /^\{(\w+)\}$/.exec(part);
+    return m && m[1] in values ? <bdi key={i} dir="ltr">{values[m[1]]}</bdi> : part;
+  });
+}
+
+function PlaybookCard({ ai, timeframe }) {
   const { t } = useI18n();
+  const plan = ai.entry_plan;
+  const exit = ai.exit_plan;
+  const ev = ai.playbook?.evidence;
+  return (
+    <div className="rounded-lg border border-up/30 bg-up/[0.06] p-3 text-xs leading-relaxed text-mist-300 space-y-1.5">
+      <p className="text-sm font-semibold text-up">✓ {t("pb_title")} · {timeframe}</p>
+      {ai.signal !== "wait" && plan ? (
+        <>
+          <p>{fill(t("pb_limit_line"), { price: plan.price, bars: plan.valid_for_bars, min: plan.valid_for_minutes })}</p>
+          {exit && <p>{fill(t("pb_exit_line"), { r: `${exit.target_r}R`, bars: exit.max_hold_bars,
+            hours: Math.round(exit.max_hold_minutes / 60) })}</p>}
+          <p className="text-mist-500">{t("pb_no_chase")}</p>
+        </>
+      ) : (
+        <p>{t("pb_waiting")}: {(ai.wait_reasons || [])[0]?.message || ai.reason}</p>
+      )}
+      {ev && (
+        <>
+          <p className="text-mist-500">{t("pb_evidence_title")}</p>
+          <div className="grid grid-cols-3 gap-2">
+            <EvidenceCell ltr label={t("bt_ev_years_pos")} value={ev.positive_years} tone="up" />
+            <EvidenceCell ltr label={t("bt_ev_period_holdout")} value={`+${ev.expectancy_r?.holdout}R`} tone="up" />
+            <EvidenceCell ltr label={t("bt_ev_tpy")} value={`≈${ev.trades_per_year}`} />
+          </div>
+        </>
+      )}
+      {ai.strategy_note && <p className="text-gold-soft">{ai.strategy_note}</p>}
+    </div>
+  );
+}
+
+function BacktestPanel({ symbol, timeframe, series, mode }) {
+  const { t } = useI18n();
+  const [period, setPeriod] = useState(() => localStorage.getItem("sp_bt_period") || "medium");
   const [res, setRes] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
@@ -1240,14 +1293,15 @@ function BacktestPanel({ symbol, timeframe, series }) {
       window.removeEventListener("smartpips-strategy-changed", clear);
       window.removeEventListener("storage", storage);
     };
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, mode, period]);
 
   async function run() {
     const id = gate.current.begin();
     if (id === null) return;
     setLoading(true); setErr(null); setRes(null);
     try {
-      const result = await strategyApi.backtest(symbol, timeframe, series);
+      const bars = barsFor(timeframe, period);
+      const result = await strategyApi.backtest(symbol, timeframe, series, { mode, bars });
       if (gate.current.current(id)) setRes(result);
     }
     catch (e) { if (gate.current.current(id)) setErr(e.message); }
@@ -1262,6 +1316,18 @@ function BacktestPanel({ symbol, timeframe, series }) {
       title={`${t("backtest")} · ${symbol} ${timeframe}`}
       action={<Button onClick={run} disabled={loading}>{loading ? t("thinking") : t("run_backtest")}</Button>}
     >
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-mist-500">{t("bt_period")}:</span>
+        {["short", "medium", "long"].map((p) => (
+          <button key={p} type="button"
+            onClick={() => { setPeriod(p); try { localStorage.setItem("sp_bt_period", p); } catch { /* ignore */ } }}
+            className={`rounded-md border px-2 py-1 ${period === p ? "border-gold/50 bg-gold/10 text-gold-soft" : "border-ink-500 text-mist-500"}`}>
+            {t(`bt_period_${p}`)} · {(BT_PERIODS[timeframe] || BT_PERIODS["5m"])[p].toLocaleString()}
+          </button>
+        ))}
+        <span className="text-mist-600">{t("bt_mode_label")}: {mode === "trend" ? t("mode_trend") : t(`mode_${mode}`)}</span>
+      </div>
+      {loading && <p className="mb-2 text-xs text-mist-500">{t("bt_loading_history")}</p>}
       {err && <p className="text-down text-sm">{err}</p>}
       {res?.strategy && <p className="mb-2 text-xs text-mist-500">{res.strategy}</p>}
       {res?.data_diagnostics?.partial_history && (
@@ -1298,15 +1364,16 @@ function BacktestPanel({ symbol, timeframe, series }) {
             <Mini label={t("bt_exp")} value={res.expectancy_r} tone={(res.expectancy_r ?? 0) > 0 ? "up" : "down"} />
             <Mini label={t("bt_dd")} value={res.max_drawdown_r} tone="neutral" />
           </div>
-          <p className="text-[11px] text-mist-500 mt-3">{t("bt_verdict")}: {
+          {!res.evidence && <p className="text-[11px] text-mist-500 mt-3">{t("bt_verdict")}: {
             (res.profit_factor ?? 0) >= 1.3 && (res.expectancy_r ?? 0) > 0
               ? `✅ ${t("bt_good")}`
               : (res.profit_factor ?? 0) >= 1
                 ? `🟡 ${t("bt_ok")}`
                 : `🔴 ${t("bt_bad")}`
-          }</p>
+          }</p>}
         </>
       )}
+      {res && <BacktestEvidence result={res} />}
     </Panel>
   );
 }
@@ -1316,7 +1383,7 @@ function Mini({ label, value, tone = "neutral" }) {
   return (
     <div className="bg-ink-800 border border-ink-500 rounded-lg px-3 py-2">
       <p className="text-[11px] text-mist-500">{label}</p>
-      <p className={`tnum text-base font-semibold mt-0.5 ${color}`}>{value}</p>
+      <p className={`tnum text-base font-semibold mt-0.5 ${color}`}><bdi dir="ltr">{value}</bdi></p>
     </div>
   );
 }

@@ -35,10 +35,84 @@ def backtest_inputs(source, strategy=None):
     return symbol, timeframe
 
 
-def historical_window(symbol, timeframe, minimum=62, with_diagnostics=False):
-    from apps.market.candles import fetch_candles
+# Default backtest length per timeframe. A 500-bar window (the old default)
+# held ~41 hours of 5m data and produced a handful of trades: pure noise.
+DEFAULT_BARS = {"1m": 3000, "5m": 6000, "15m": 6000, "1h": 4000, "4h": 2000}
+MIN_REQUEST_BARS, MAX_REQUEST_BARS = 300, 20000
+
+
+def requested_bars(source, timeframe):
+    raw = (source or {}).get("bars")
+    if raw in (None, ""):
+        return DEFAULT_BARS.get(timeframe, 3000)
     try:
-        raw = fetch_candles(symbol, timeframe, limit=500)
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise ValidationError({"error": "bars must be a whole number.", "code": "invalid_bars"})
+    if not MIN_REQUEST_BARS <= value <= MAX_REQUEST_BARS:
+        raise ValidationError({"error": f"bars must be between {MIN_REQUEST_BARS} and {MAX_REQUEST_BARS}.",
+                               "code": "invalid_bars"})
+    return value
+
+
+def _clean_series(raw, step):
+    out = {}
+    for row in raw or []:
+        try:
+            t = float(row["time"])
+            if t > 1e11:
+                t /= 1000
+            vals = {k: float(row[k]) for k in ("open", "high", "low", "close")}
+            if not all(math.isfinite(v) and v > 0 for v in vals.values()):
+                continue
+            if t + step > time.time():
+                continue  # forming bar
+            out[t] = {"time": t, **vals, "volume": float(row.get("volume") or 0)}
+        except (TypeError, ValueError, KeyError):
+            continue
+    return [out[t] for t in sorted(out)]
+
+
+def htf_history(symbol, timeframe, window, labels=("4h", "1h"), warmup=300):
+    """Closed higher-timeframe candles covering the backtest window + warm-up.
+
+    The backtester aligns them bar-by-bar (closed HTF bars only), exactly as
+    the live engine sees them, instead of resampling a short window.
+    """
+    from apps.market.candles import fetch_history
+    if not window:
+        return {}, {}
+    span = window[-1]["time"] - window[0]["time"] + TF_SECONDS[timeframe]
+    series, info = {}, {}
+    for label in labels:
+        step = TF_SECONDS[label]
+        if step <= TF_SECONDS[timeframe]:
+            continue
+        need = int(span // step) + warmup + 2
+        try:
+            raw, meta = fetch_history(symbol, label, need)
+        except Exception:
+            raw, meta = [], {"error": "fetch failed"}
+        rows = _clean_series(raw, step)
+        if rows:
+            series[label] = rows
+        info[label] = {**meta, "used": len(rows)}
+    return series, info
+
+
+def historical_window(symbol, timeframe, minimum=62, with_diagnostics=False, bars=None):
+    from apps.market.candles import fetch_candles
+    history_info = None
+    try:
+        raw = []
+        if bars:
+            from apps.market.candles import fetch_history
+            try:
+                raw, history_info = fetch_history(symbol, timeframe, bars)
+            except Exception:
+                raw, history_info = [], {"error": "history fetch failed"}
+        if not raw:
+            raw = fetch_candles(symbol, timeframe, limit=500)
     except (requests.RequestException, TimeoutError, ConnectionError) as exc:
         raise MarketDataUnavailable({"error": "Market data provider is unavailable. Try again.",
                                      "code": "market_data_unavailable"}) from exc
@@ -103,7 +177,41 @@ def historical_window(symbol, timeframe, minimum=62, with_diagnostics=False):
         "window_start": ordered[0]["time"], "window_end": ordered[-1]["time"],
         "partial_history": bool(invalid or (gaps and len(ordered) < len(candles))),
         "short_window": len(ordered) < 200,
-        "source": LAST_SOURCE.get(f"{symbol}:{timeframe}"),
+        "source": (history_info or {}).get("source") or LAST_SOURCE.get(f"{symbol}:{timeframe}"),
         "provider": FETCH_DIAGNOSTICS.get(f"{symbol}:{timeframe}", {}),
+        "requested_bars": bars, "history": history_info,
+        "days_covered": round((ordered[-1]["time"] - ordered[0]["time"]) / 86400, 1),
     }
     return (ordered, diagnostics) if with_diagnostics else ordered
+
+BACKTEST_MODES = ("safe", "aggressive", "trend")
+
+
+def run_backtest_request(src, symbol, timeframe, version, runner, **extra):
+    """One code path for both backtest endpoints: long history, real HTF
+    candles, the requested engine mode (or the strategy's playbook)."""
+    from .backtest import uses_playbook
+    from .decision import HTF
+    mode = str((src or {}).get("mode") or "safe").lower()
+    if mode not in BACKTEST_MODES:
+        raise ValidationError({"error": "mode must be safe, aggressive or trend.", "code": "invalid_mode"})
+    if uses_playbook(None, version):
+        mode = "trend"
+    bars = requested_bars(src, timeframe)
+    candles, data_info = historical_window(symbol, timeframe, with_diagnostics=True, bars=bars)
+    labels = set(HTF.get(timeframe, [])) | {"4h", "1h"}
+    htf_series, htf_info = htf_history(symbol, timeframe, candles, labels=tuple(sorted(labels)))
+    data_info["htf"] = htf_info
+    result = runner(symbol, candles, source=src, timeframe=timeframe, version=version,
+                    mode=mode, htf_series=htf_series, **extra)
+    result["candles_used"] = len(candles)
+    result["data_diagnostics"] = data_info
+    result["mode"] = mode
+    if uses_playbook(mode, version):
+        from . import trend_pullback
+        result["research_evidence"] = {
+            "summary": trend_pullback.RESEARCH["results"].get(timeframe),
+            "data": trend_pullback.RESEARCH["data"], "costs": trend_pullback.RESEARCH["costs"],
+            "caveats": trend_pullback.RESEARCH["caveats"],
+            "validated_timeframes": list(trend_pullback.TIMEFRAMES)}
+    return result

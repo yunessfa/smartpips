@@ -127,7 +127,7 @@ class OrderViewGuardTests(TestCase):
     def test_demo_fills_locally_at_live_price(self, _lp):
         r = self.api.post("/api/bitunix/order/",
                           {"mode": "demo", "symbol": "BTCUSDT", "side": "BUY",
-                           "qty": 0.01, "leverage": 5,
+                           "qty": 0.01, "leverage": 5, "demoBalance": 10000,
                            "tpPrice": 101000, "slPrice": 99000}, format="json")
         self.assertEqual(r.status_code, 200, r.content)
         self.assertTrue(r.json()["filled"])
@@ -199,26 +199,32 @@ class DemoBalanceCapTests(TestCase):
         # need 0.01*100000/5 = 200 USDT margin; top balance only 75.83
         r = self.api.post("/api/bitunix/order/",
                           {"mode": "demo", "symbol": "BTCUSDT", "side": "BUY",
-                           "qty": 0.01, "leverage": 5, "demoBalance": 75.83},
+                           "qty": 0.01, "leverage": 5, "demoBalance": 75.83,
+                           "slPrice": 99000},
                           format="json")
         self.assertEqual(r.status_code, 400)
-        self.assertIn("insufficient demo balance", r.json()["error"])
+        # The demo risk profile (demo_risk.assess) now rejects first on available
+        # margin; the legacy balance check message is still accepted.
+        self.assertTrue(any(m in r.json()["error"] for m in
+                            ("insufficient demo balance", "demo_available_margin")), r.json())
 
     @mock.patch("apps.bitunix.views.BitunixClient.last_price", return_value=100000.0)
     def test_demo_counts_open_margins(self, _lp):
         DemoPosition.objects.create(user=self.user, symbol="BTCUSDT", side="LONG",
                                     qty=0.004, entry_price=100000, leverage=5,
-                                    margin=80)
+                                    margin=80, sl_price=99900)
         # free = 100 - 80 = 20; need 40 -> reject
         r = self.api.post("/api/bitunix/order/",
                           {"mode": "demo", "symbol": "BTCUSDT", "side": "BUY",
-                           "qty": 0.002, "leverage": 5, "demoBalance": 100},
+                           "qty": 0.002, "leverage": 5, "demoBalance": 100,
+                           "slPrice": 99000},
                           format="json")
         self.assertEqual(r.status_code, 400)
         # free 20, need 20 -> accept
         r2 = self.api.post("/api/bitunix/order/",
                            {"mode": "demo", "symbol": "BTCUSDT", "side": "BUY",
-                            "qty": 0.001, "leverage": 5, "demoBalance": 100},
+                            "qty": 0.001, "leverage": 5, "demoBalance": 100,
+                            "slPrice": 99000},
                            format="json")
         self.assertEqual(r2.status_code, 200, r2.content)
 
@@ -298,7 +304,8 @@ class JournalMirrorTests(TestCase):
         # open (at 100500 via mocked live price)
         self.api.post("/api/bitunix/order/",
                       {"mode": "demo", "symbol": "BTCUSDT", "side": "BUY",
-                       "qty": 0.001, "leverage": 5, "demoBalance": 1000},
+                       "qty": 0.001, "leverage": 5, "demoBalance": 1000,
+                       "slPrice": 99500},
                       format="json")
         pos = DemoPosition.objects.get(user=self.user)
         r = self.api.post("/api/bitunix/close/",
@@ -316,7 +323,7 @@ class JournalMirrorTests(TestCase):
         self.api.post("/api/bitunix/order/",
                       {"mode": "demo", "symbol": "BTCUSDT", "side": "BUY",
                        "qty": 0.001, "leverage": 5, "demoBalance": 1000,
-                       "tpPrice": 101000}, format="json")
+                       "tpPrice": 101000, "slPrice": 99000}, format="json")
         pos = DemoPosition.objects.get(user=self.user)
         lp.return_value = 101500.0          # TP crossed
         self.api.get("/api/bitunix/positions/?mode=demo")
@@ -416,7 +423,8 @@ class JournalSizeConventionTests(TestCase):
         # margin 375 @ 15x on LINK: qty ≈ 706.5, but size stored must be 375
         r = self.api.post("/api/bitunix/order/",
                           {"mode": "demo", "symbol": "LINKUSDT", "side": "BUY",
-                           "qty": 706.5, "leverage": 15, "demoBalance": 1000},
+                           "qty": 706.5, "leverage": 15, "demoBalance": 1000,
+                           "slPrice": 7.8},
                           format="json")
         self.assertEqual(r.status_code, 200, r.content)
         from apps.trades.models import Trade

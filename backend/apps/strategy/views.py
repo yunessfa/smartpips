@@ -14,7 +14,7 @@ from .services import fetch_channel_messages
 def backtest_view(request):
     """Backtest completed real OHLCV only; tick buffers are not historical bars."""
     src = request.data if request.method == "POST" else request.query_params
-    from .backtest_data import backtest_inputs, historical_window
+    from .backtest_data import backtest_inputs, run_backtest_request
     from .backtest_runner import run_selected as backtest
     from .config_models import Strategy
     strategy = Strategy.objects.filter(user=request.user, is_active=True, archived=False).first()
@@ -28,14 +28,12 @@ def backtest_view(request):
         if checked.get("code") == "invalid_strategy_config":
             return Response({"error": checked["reason"], "code": checked["code"]}, status=400)
     symbol, timeframe = backtest_inputs(src, strategy)
-    candles, data_info = historical_window(symbol, timeframe, with_diagnostics=True)
-    result = backtest(symbol, candles, source=src, timeframe=timeframe, version=version)
+    result = run_backtest_request(src, symbol, timeframe, version, backtest)
     result["symbol"] = symbol
     result["timeframe"] = timeframe
-    result["candles_used"] = len(candles)
     result["data_quality"] = "candles"
-    result["data_diagnostics"] = data_info
-    result["strategy"] = strategy.name if strategy else "Base engine"
+    result["strategy"] = (strategy.name if strategy
+                          else "Trend pullback playbook" if result.get("mode") == "trend" else "Base engine")
     result["strategy_id"] = strategy.pk if strategy else None
     result["strategy_version_id"] = version.pk if version else None
     return Response(result)

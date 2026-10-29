@@ -8,6 +8,15 @@ from .push import broadcast, vapid_configured
 log = logging.getLogger('smartpips.alerts')
 
 
+def _limit_note(decision):
+    plan = decision.get('entry_plan') or {}
+    if plan.get('type') != 'limit':
+        return ''
+    minutes = plan.get('valid_for_minutes')
+    source = 'trend pullback, ' if decision.get('signal_source') == 'playbook' else ''
+    return (f"LIMIT ({source}valid ~{minutes} min) " if minutes else f"LIMIT ({source}pullback) ")
+
+
 def evaluate_and_alert(symbol, timeframe):
     """Notify once per user's final-signal transition and strategy version.
 
@@ -56,7 +65,7 @@ def evaluate_and_alert(symbol, timeframe):
                     payload = {
                         'title': f'SmartPips · {symbol} {timeframe}',
                         'body': (f"{word} setup (score {score}, R:R {decision.get('risk_reward')}). "
-                                 f"{'LIMIT (pullback) ' if (decision.get('entry_plan') or {}).get('type') == 'limit' else ''}"
+                                 f"{_limit_note(decision)}"
                                  f"Entry {decision.get('entry')} · SL {decision.get('stop_loss')} "
                                  f"· TP {decision.get('take_profit')}"),
                         'url': f'/app/scalp?symbol={symbol}&tf={timeframe}&quick=1',

@@ -36,3 +36,6 @@ backend/.cache/
 
 # Generated local visual-QA artifacts
 qa/leverage-ui/artifacts/
+
+backend/logs/
+frontend/node_modules

@@ -60,6 +60,9 @@ class StrategySerializer(serializers.ModelSerializer):
 
     def get_signal_policy(self, obj):
         current = obj.current_version()
+        if current and (current.risk or {}).get("signal_source") == "playbook":
+            return ("Validated trend-pullback playbook (4h trend + EMA21 pullback limit, 1.5 ATR stop, "
+                    "fixed target). Your rules can only veto it.")
         if current and (current.risk or {}).get("signal_source") == "strategy":
             return ("Strategy decides the direction; engine readings, data-quality/news/risk gates "
                     "and the scalp plan still apply.")
