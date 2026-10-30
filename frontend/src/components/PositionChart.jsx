@@ -509,7 +509,7 @@ export function PositionChart({
 
       {/* chart + HUD */}
       <div className="relative rounded-xl overflow-hidden border border-ink-500 bg-ink-800">
-        <div ref={boxRef} style={{ height: `${height}px` }} />
+        <div ref={boxRef} style={{ height: `${height}px`, minHeight: `${height}px` }} />
 
         {loading && !candles && (
           <div className="absolute inset-0 grid place-items-center text-xs text-mist-500">

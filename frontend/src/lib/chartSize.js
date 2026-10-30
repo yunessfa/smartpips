@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
 
-// One height for every price chart on the site (Scalp analysis chart,
-// TradingView chart, dashboard and Bitunix position charts) so they line up.
-export const CHART_HEIGHT_DESKTOP = 460;
-export const CHART_HEIGHT_MOBILE = 360;
+// Every price chart (Scalp analysis chart, TradingView chart, dashboard and
+// Bitunix position charts) gets the SAME explicit height: 80% of the visible
+// screen height, written into the chart div in pixels. Percent heights inside
+// flex/overflow layouts collapse, so the value is computed, not "80%".
+export const CHART_VIEWPORT_RATIO = 0.8;
+export const CHART_MIN_HEIGHT = 320;
 
 function pick() {
-  if (typeof window === "undefined") return CHART_HEIGHT_DESKTOP;
-  return window.innerWidth < 640 ? CHART_HEIGHT_MOBILE : CHART_HEIGHT_DESKTOP;
+  if (typeof window === "undefined") return 600;
+  return Math.max(CHART_MIN_HEIGHT, Math.round(window.innerHeight * CHART_VIEWPORT_RATIO));
 }
 
 export function useChartHeight() {
   const [h, setH] = useState(pick);
   useEffect(() => {
-    const on = () => setH(pick());
+    let t = null;
+    const on = () => { clearTimeout(t); t = setTimeout(() => setH(pick()), 150); };
     window.addEventListener("resize", on);
-    return () => window.removeEventListener("resize", on);
+    return () => { clearTimeout(t); window.removeEventListener("resize", on); };
   }, []);
   return h;
 }

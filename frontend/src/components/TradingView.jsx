@@ -61,7 +61,8 @@ function TVEmbed({ src, config, height = 460 }) {
     const inject = () => {
     const widget = document.createElement("div");
     widget.className = "tradingview-widget-container__widget";
-    widget.style.height = "100%";
+    // explicit pixel height (not 100%): TradingView's autosize iframe reads it
+    widget.style.height = `${height}px`;
     widget.style.width = "100%";
     container.appendChild(widget);
 
@@ -84,13 +85,13 @@ function TVEmbed({ src, config, height = 460 }) {
     }
 
     return () => { if (ro) ro.disconnect(); container.innerHTML = ""; };
-  }, [src, JSON.stringify(config)]);
+  }, [src, JSON.stringify(config), height]);
 
   return (
     <div
       ref={ref}
       className="tradingview-widget-container w-full rounded-xl overflow-hidden border border-ink-500 bg-ink-800"
-      style={{ height: `${height}px`, minHeight: `${height}px` }}
+      style={{ height: `${height}px`, minHeight: `${height}px`, maxHeight: `${height}px` }}
     />
   );
 }
