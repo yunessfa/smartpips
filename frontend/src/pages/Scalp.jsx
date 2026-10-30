@@ -4,6 +4,7 @@ import { fill } from "../lib/fill.jsx";
 import { BacktestReasons } from "../components/BacktestReasons.jsx";
 import BacktestEvidence, { Cell as EvidenceCell } from "../components/BacktestEvidence.jsx";
 import { BT_PERIODS, barsFor } from "../lib/backtestPeriods.js";
+import { useChartHeight } from "../lib/chartSize.js";
 import { useMemo, useState, useEffect, useRef } from "react";
 import { PageHeader } from "../components/Layout.jsx";
 import { Panel, Button } from "../components/ui.jsx";
@@ -204,6 +205,7 @@ export default function Scalp() {
     return TIMEFRAMES[2]; // 15m: validated and fast enough to scalp
   });
   const { price, series, status } = useMetalTick(metal.symbol, { intervalMs: 1000, history: 300 });
+  const chartHeight = useChartHeight();
 
 
   const [ai, setAi] = useState(null);
@@ -615,15 +617,15 @@ export default function Scalp() {
         {/* ---------------------------------------------------- chart */}
         <Panel title={`${t("analysis_chart_title")} · ${metal.label} · ${tf[0]}`}>
           <PositionChart symbol={metal.symbol} analysisMode analysis={ai} analysisTimeframe={tf[0]}
-            showSymbolPicker={false} height={440} storageKey="pc_tf_scalp" />
+            showSymbolPicker={false} storageKey="pc_tf_scalp" />
         </Panel>
 
         {/* ---------------------------------------------------- secondary */}
         <Collapse title={`💼 ${t("sc_account_section")}`} defaultOpen>
           <TradingAccountPanel balance={balance} defaultInitial={tradeInitial} refreshKey={tradesVersion} />
         </Collapse>
-        <Collapse title={`📈 ${t("sc_tradingview")}`}>
-          <SignalChart symbol={metal.tv} interval={tf[1]} height={380} studies={NO_STUDIES} hideVolume />
+        <Collapse title={`📈 ${t("sc_tradingview")}`} lazy>
+          <SignalChart symbol={metal.tv} interval={tf[1]} height={chartHeight} studies={NO_STUDIES} hideVolume />
         </Collapse>
         <Collapse title={`📚 ${t("sc_market_context")}`}>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -794,15 +796,19 @@ function WatchlistPanel({ current }) {
   );
 }
 
-function Collapse({ title, children, defaultOpen = false }) {
+// `lazy`: children mount only once the section is opened (and stay mounted).
+// Third-party widgets such as TradingView measure their container when they
+// load; inside a closed <details> that width is 0 and the chart stays broken.
+function Collapse({ title, children, defaultOpen = false, lazy = false }) {
+  const [opened, setOpened] = useState(defaultOpen);
   return (
-    <details open={defaultOpen}
+    <details open={defaultOpen} onToggle={(e) => { if (e.currentTarget.open) setOpened(true); }}
       className="group bg-ink-700/60 border border-ink-500 rounded-xl overflow-hidden">
       <summary className="cursor-pointer select-none list-none px-4 py-2.5 text-[13px] font-medium text-mist-300 hover:text-mist-100 flex items-center justify-between">
         {title}
         <span className="text-mist-500 transition group-open:rotate-180">▾</span>
       </summary>
-      <div className="px-4 pb-4">{children}</div>
+      <div className="px-4 pb-4">{!lazy || opened ? children : null}</div>
     </details>
   );
 }

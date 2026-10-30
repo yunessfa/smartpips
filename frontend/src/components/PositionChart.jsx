@@ -5,6 +5,7 @@ import { bitunixApi, marketApi } from "../api/client.js";
 import { useI18n } from "../i18n/index.jsx";
 import { fmtPrice } from "../lib/num.js";
 import { BITUNIX_SYMBOLS } from "../lib/symbols.js";
+import { useChartHeight } from "../lib/chartSize.js";
 
 /**
  * Candlestick chart with an optional position overlay.
@@ -99,13 +100,15 @@ export function PositionChart({
   symbol: symbolProp,          // optional: drive the symbol from the page
   showSymbolPicker = true,
   refreshKey,
-  height = 420,
+  height: heightProp,
   storageKey = "pc_tf",
   analysisMode = false,
   analysis = null,
   analysisTimeframe = null,
 }) {
   const { t } = useI18n();
+  const autoHeight = useChartHeight();
+  const height = heightProp ?? autoHeight;
 
   // ------------------------------------------------------------- symbol ---
   // The chart owns a symbol at all times, so it renders with or without a

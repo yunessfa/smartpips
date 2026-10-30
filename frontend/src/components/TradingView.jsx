@@ -57,7 +57,8 @@ function TVEmbed({ src, config, height = 460 }) {
     const container = ref.current;
     if (!container) return;
     container.innerHTML = "";
-
+    let ro = null;
+    const inject = () => {
     const widget = document.createElement("div");
     widget.className = "tradingview-widget-container__widget";
     widget.style.height = "100%";
@@ -70,8 +71,19 @@ function TVEmbed({ src, config, height = 460 }) {
     script.type = "text/javascript";
     script.innerHTML = JSON.stringify(config);
     container.appendChild(script);
+    };
+    if (container.clientWidth > 0) {
+      inject();
+    } else if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => {
+        if (container.clientWidth > 0) { ro.disconnect(); ro = null; inject(); }
+      });
+      ro.observe(container);
+    } else {
+      inject();
+    }
 
-    return () => { container.innerHTML = ""; };
+    return () => { if (ro) ro.disconnect(); container.innerHTML = ""; };
   }, [src, JSON.stringify(config)]);
 
   return (

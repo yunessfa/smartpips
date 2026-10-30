@@ -121,7 +121,7 @@ export default function Dashboard() {
                 </Badge>
               )}>
               <PositionChart symbol={toBitunixSymbol(selected?.symbol) || undefined}
-                height={480} storageKey="pc_tf_dash" />
+                storageKey="pc_tf_dash" />
             </Panel>
 
             <Panel title={t("watchlist")}>

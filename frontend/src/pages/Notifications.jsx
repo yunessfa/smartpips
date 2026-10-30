@@ -237,28 +237,82 @@ function AlertHealth({ status, t }) {
         {(status.watching || []).length === 0 && <Badge tone="down">{t("notif_health_no_watch")}</Badge>}
       </div>
       {!mon.healthy && <p className="text-[11px] text-down">{t("notif_health_monitor_hint")}</p>}
-      {pairs.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11px]">
-            <thead><tr className="text-mist-500">
-              <th className="text-start py-1">{t("notif_health_pair")}</th>
-              <th className="text-start py-1">{t("notif_health_checked")}</th>
-              <th className="text-start py-1">{t("notif_health_reason")}</th>
-            </tr></thead>
-            <tbody>
-              {pairs.map((p) => (
-                <tr key={`${p.symbol}-${p.timeframe}`} className="border-t border-ink-700">
-                  <td className="py-1 pe-2 whitespace-nowrap text-mist-200">{p.symbol} {p.timeframe}</td>
-                  <td className="py-1 pe-2 whitespace-nowrap text-mist-400">
-                    {p.last_checked ? ago(Math.round((now - new Date(p.last_checked).getTime()) / 1000), t) : "—"}
-                  </td>
-                  <td className="py-1 text-mist-400">{p.reason || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {pairs.length > 0 && <PairChecks pairs={pairs} now={now} t={t} />}
+    </div>
+  );
+}
+
+/** Per-pair "why no alert" rows. Many watched symbols x timeframes make a long
+ *  list, so it lives in a collapsed, fixed-height, self-scrolling box (newest
+ *  checks first) with a reason summary on top — the page itself never grows. */
+function PairChecks({ pairs, now, t }) {
+  const [query, setQuery] = useState("");
+  const sorted = useMemo(() => [...pairs].sort((a, b) =>
+    new Date(b.last_checked || 0).getTime() - new Date(a.last_checked || 0).getTime()), [pairs]);
+  const q = query.trim().toUpperCase();
+  const shown = q ? sorted.filter((p) => `${p.symbol} ${p.timeframe}`.toUpperCase().includes(q)) : sorted;
+  const reasons = useMemo(() => {
+    const counts = {};
+    for (const p of pairs) {
+      const key = (p.reason || "—").replace(/\d+(\.\d+)?/g, "#").slice(0, 70);
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  }, [pairs]);
+  const fresh = pairs.filter((p) => p.last_checked && now - new Date(p.last_checked).getTime() < 5 * 60 * 1000).length;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2 text-[11px] text-mist-400">
+        <span className="rounded-md border border-ink-600 px-2 py-0.5">
+          {t("notif_health_pairs_count")}: <bdi dir="ltr">{pairs.length}</bdi>
+        </span>
+        <span className="rounded-md border border-ink-600 px-2 py-0.5">
+          {t("notif_health_fresh")}: <bdi dir="ltr">{fresh}/{pairs.length}</bdi>
+        </span>
+      </div>
+      {reasons.length > 0 && (
+        <ul className="space-y-0.5 text-[11px] text-mist-400">
+          {reasons.map(([r, n]) => (
+            <li key={r} className="flex items-center gap-2" title={r}>
+              <span className="shrink-0 rounded bg-ink-700 px-1.5 text-mist-200"><bdi dir="ltr">{n}×</bdi></span>
+              <span dir="auto" className="min-w-0 truncate">{r}</span>
+            </li>
+          ))}
+        </ul>
       )}
+      <details className="sp-disclosure">
+        <summary className="text-[12px]">{t("notif_health_details")} ({pairs.length})</summary>
+        <div className="space-y-2 pt-2">
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("search_symbol")}
+            className="w-full rounded-lg border border-ink-500 bg-ink-900 px-3 py-1.5 text-xs text-mist-100 outline-none focus:border-gold/50" />
+          <div className="max-h-72 overflow-auto overscroll-contain rounded-lg border border-ink-700">
+            <table className="w-full text-[11px]">
+              <thead className="sticky top-0 bg-ink-800">
+                <tr className="text-mist-500">
+                  <th className="text-start px-2 py-1.5">{t("notif_health_pair")}</th>
+                  <th className="text-start px-2 py-1.5">{t("notif_health_checked")}</th>
+                  <th className="text-start px-2 py-1.5">{t("notif_health_reason")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((p) => (
+                  <tr key={`${p.symbol}-${p.timeframe}`} className="border-t border-ink-700 align-top">
+                    <td className="px-2 py-1.5 whitespace-nowrap text-mist-200">{p.symbol} {p.timeframe}</td>
+                    <td className="px-2 py-1.5 whitespace-nowrap text-mist-400">
+                      {p.last_checked ? ago(Math.round((now - new Date(p.last_checked).getTime()) / 1000), t) : "—"}
+                    </td>
+                    <td className="px-2 py-1.5 text-mist-400"><span className="line-clamp-2" title={p.reason || ""}>{p.reason || "—"}</span></td>
+                  </tr>
+                ))}
+                {shown.length === 0 && (
+                  <tr><td colSpan={3} className="px-2 py-3 text-center text-mist-500">{t("no_results")}</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
