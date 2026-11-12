@@ -50,7 +50,7 @@ def upcoming_events(symbol="XAUUSD", limit=5):
     selected = []
     for ev in events:
         minutes = (datetime.fromisoformat(ev["time"]) - now).total_seconds() / 60
-        if minutes >= -5:
+        if minutes >= -max(5, blackout_window()[1]):
             selected.append({**ev, "minutes_until": round(minutes, 1)})
     age = time.time() - _cache["ts"] if _cache["ts"] else None
     return {"events": selected[:limit], "symbol": symbol,
@@ -58,12 +58,39 @@ def upcoming_events(symbol="XAUUSD", limit=5):
             "fetched_at": datetime.fromtimestamp(_cache["ts"], timezone.utc).isoformat() if _cache["ts"] else None,
             "source": urlparse(os.getenv("ECONOMIC_CALENDAR_URL") or DEFAULT_URL).hostname,
             "scope": "USD macro events; indirect relevance to crypto",
+            "blackout": {"before_min": blackout_window()[0], "after_min": blackout_window()[1]},
             "direction": "unknown"}
 
 
-def high_impact_soon(within_min=30):
-    data = upcoming_events(limit=100)
-    for ev in data["events"]:
-        if ev["impact"] == "high" and -5 <= ev["minutes_until"] <= within_min:
-            return True, f"{ev['title']} in ~{int(max(ev['minutes_until'], 0))}m"
+def blackout_window():
+    """(minutes before, minutes after) a high-impact release during which no new entry is offered."""
+    try:
+        from django.conf import settings
+        return (max(0, int(getattr(settings, "NEWS_BLACKOUT_BEFORE_MIN", 30))),
+                max(0, int(getattr(settings, "NEWS_BLACKOUT_AFTER_MIN", 15))))
+    except Exception:
+        return 30, 15
+
+
+def high_impact_soon(within_min=None, after_min=None):
+    """True while a high-impact USD release is close: `within_min` before it, `after_min` after.
+
+    The minutes right after a release are when spreads are widest and price is most
+    erratic, so the block has to outlast the print, not end with it.
+    This is a risk control, not a forecast: it says nothing about direction, and it
+    cannot be backtested here (the feed only carries the current week).
+    """
+    before, after = blackout_window()
+    before = before if within_min is None else within_min
+    after = after if after_min is None else after_min
+    events = _load_events()
+    now = datetime.now(timezone.utc)
+    for ev in events:
+        if ev["impact"] != "high":
+            continue
+        minutes = (datetime.fromisoformat(ev["time"]) - now).total_seconds() / 60
+        if -after <= minutes <= before:
+            if minutes >= 0:
+                return True, f"{ev['title']} in ~{int(minutes)}m"
+            return True, f"{ev['title']} released {int(-minutes)}m ago (cooldown {after}m)"
     return False, ""

@@ -1,0 +1,759 @@
+== 1h: bars=77693 sweep-bars=4586 levels=12482
+
+--- fade tgt=2.0R [TR]
+ALL                                n=  867 win= 31.9% expR=-0.238 t=-5.1 PF=0.70
+with 4h trend                      n=  339 win= 33.6% expR=-0.186 t=-2.5 PF=0.76
+against 4h trend                   n=  431 win= 31.6% expR=-0.258 t=-4.0 PF=0.68
+no 4h trend                        n=   97 win= 27.8% expR=-0.332 t=-2.5 PF=0.60
+src has D                          n=  833 win= 32.2% expR=-0.231 t=-4.9 PF=0.71
+src has W                          n=  102 win= 26.5% expR=-0.416 t=-3.4 PF=0.50
+src has M                          n=   23  (too few)
+src has P4                         n=  479 win= 33.0% expR=-0.210 t=-3.4 PF=0.73
+src has PD                         n=   87 win= 27.6% expR=-0.393 t=-3.0 PF=0.52
+W or M (major)                     n=  106 win= 27.4% expR=-0.384 t=-3.2 PF=0.53
+age < 2d                           n=  595 win= 34.5% expR=-0.159 t=-2.8 PF=0.79
+age 2-14d                          n=  153 win= 27.5% expR=-0.391 t=-3.8 PF=0.53
+age 14-90d                         n=   75 win= 20.0% expR=-0.569 t=-4.3 PF=0.37
+age > 90d                          n=   44 win= 34.1% expR=-0.210 t=-1.0 PF=0.72
+nlev >= 3                          n=  173 win= 30.6% expR=-0.297 t=-3.0 PF=0.62
+major & with trend                 n=   12  (too few)
+major & against trend              n=   73 win= 31.5% expR=-0.297 t=-2.0 PF=0.62
+age>=14 & with trend               n=    7  (too few)
+age>=14 & against trend            n=   86 win= 29.1% expR=-0.338 t=-2.4 PF=0.58
+
+--- fade tgt=2.0R [VA]
+ALL                                n=  406 win= 35.7% expR=-0.132 t=-1.8 PF=0.83
+with 4h trend                      n=  158 win= 34.2% expR=-0.175 t=-1.5 PF=0.78
+against 4h trend                   n=  188 win= 38.3% expR=-0.059 t=-0.5 PF=0.92
+no 4h trend                        n=   60 win= 31.7% expR=-0.247 t=-1.4 PF=0.69
+src has D                          n=  386 win= 35.8% expR=-0.130 t=-1.8 PF=0.83
+src has W                          n=   53 win= 37.7% expR=-0.056 t=-0.3 PF=0.92
+src has M                          n=   13  (too few)
+src has P4                         n=  231 win= 35.5% expR=-0.136 t=-1.4 PF=0.82
+src has PD                         n=   48 win= 33.3% expR=-0.171 t=-0.8 PF=0.78
+W or M (major)                     n=   54 win= 37.0% expR=-0.080 t=-0.4 PF=0.89
+age < 2d                           n=  262 win= 33.6% expR=-0.205 t=-2.3 PF=0.74
+age 2-14d                          n=   88 win= 40.9% expR=+0.028 t=+0.2 PF=1.04
+age 14-90d                         n=   40 win= 40.0% expR=+0.019 t=+0.1 PF=1.03
+age > 90d                          n=   16  (too few)
+nlev >= 3                          n=   92 win= 40.2% expR=+0.010 t=+0.1 PF=1.01
+major & with trend                 n=    7  (too few)
+major & against trend              n=   36 win= 36.1% expR=-0.084 t=-0.4 PF=0.89
+age>=14 & with trend               n=    0  (too few)
+age>=14 & against trend            n=   45 win= 33.3% expR=-0.144 t=-0.7 PF=0.81
+
+--- fade tgt=2.0R [HO]
+ALL                                n=  303 win= 32.0% expR=-0.260 t=-3.3 PF=0.68
+with 4h trend                      n=  105 win= 35.2% expR=-0.181 t=-1.3 PF=0.77
+against 4h trend                   n=  152 win= 28.9% expR=-0.345 t=-3.1 PF=0.60
+no 4h trend                        n=   46 win= 34.8% expR=-0.164 t=-0.8 PF=0.79
+src has D                          n=  291 win= 31.6% expR=-0.271 t=-3.3 PF=0.67
+src has W                          n=   50 win= 22.0% expR=-0.537 t=-3.1 PF=0.42
+src has M                          n=   13  (too few)
+src has P4                         n=  185 win= 33.0% expR=-0.228 t=-2.2 PF=0.72
+src has PD                         n=   41 win= 29.3% expR=-0.313 t=-1.5 PF=0.63
+W or M (major)                     n=   50 win= 22.0% expR=-0.537 t=-3.1 PF=0.42
+age < 2d                           n=  184 win= 32.1% expR=-0.278 t=-2.7 PF=0.67
+age 2-14d                          n=   72 win= 31.9% expR=-0.249 t=-1.5 PF=0.70
+age 14-90d                         n=   30 win= 36.7% expR=-0.092 t=-0.4 PF=0.87
+age > 90d                          n=   17  (too few)
+nlev >= 3                          n=   77 win= 31.2% expR=-0.257 t=-1.6 PF=0.69
+major & with trend                 n=    7  (too few)
+major & against trend              n=   32 win= 18.8% expR=-0.623 t=-3.0 PF=0.35
+age>=14 & with trend               n=    1  (too few)
+age>=14 & against trend            n=   38 win= 26.3% expR=-0.370 t=-1.7 PF=0.56
+
+--- fade tgt=3.0R [TR]
+ALL                                n=  867 win= 24.5% expR=-0.275 t=-5.0 PF=0.69
+with 4h trend                      n=  339 win= 26.0% expR=-0.195 t=-2.1 PF=0.77
+against 4h trend                   n=  431 win= 23.7% expR=-0.331 t=-4.4 PF=0.63
+no 4h trend                        n=   97 win= 22.7% expR=-0.304 t=-1.9 PF=0.66
+src has D                          n=  833 win= 24.6% expR=-0.268 t=-4.8 PF=0.69
+src has W                          n=  102 win= 19.6% expR=-0.544 t=-4.3 PF=0.40
+src has M                          n=   23  (too few)
+src has P4                         n=  479 win= 25.5% expR=-0.252 t=-3.4 PF=0.71
+src has PD                         n=   87 win= 20.7% expR=-0.502 t=-3.5 PF=0.44
+W or M (major)                     n=  106 win= 20.8% expR=-0.510 t=-4.0 PF=0.43
+age < 2d                           n=  595 win= 26.6% expR=-0.173 t=-2.5 PF=0.80
+age 2-14d                          n=  153 win= 20.9% expR=-0.461 t=-4.0 PF=0.49
+age 14-90d                         n=   75 win= 13.3% expR=-0.688 t=-5.0 PF=0.30
+age > 90d                          n=   44 win= 27.3% expR=-0.300 t=-1.3 PF=0.64
+nlev >= 3                          n=  173 win= 23.7% expR=-0.377 t=-3.4 PF=0.56
+major & with trend                 n=   12  (too few)
+major & against trend              n=   73 win= 23.3% expR=-0.453 t=-2.8 PF=0.49
+age>=14 & with trend               n=    7  (too few)
+age>=14 & against trend            n=   86 win= 22.1% expR=-0.440 t=-2.9 PF=0.51
+
+--- fade tgt=3.0R [VA]
+ALL                                n=  406 win= 29.1% expR=-0.086 t=-1.0 PF=0.90
+with 4h trend                      n=  158 win= 29.7% expR=-0.052 t=-0.4 PF=0.94
+against 4h trend                   n=  188 win= 30.9% expR=-0.017 t=-0.1 PF=0.98
+no 4h trend                        n=   60 win= 21.7% expR=-0.395 t=-2.0 PF=0.57
+src has D                          n=  386 win= 29.0% expR=-0.090 t=-1.0 PF=0.89
+src has W                          n=   53 win= 34.0% expR=+0.116 t=+0.5 PF=1.15
+src has M                          n=   13  (too few)
+src has P4                         n=  231 win= 29.4% expR=-0.069 t=-0.6 PF=0.92
+src has PD                         n=   48 win= 29.2% expR=-0.043 t=-0.2 PF=0.95
+W or M (major)                     n=   54 win= 33.3% expR=+0.089 t=+0.4 PF=1.11
+age < 2d                           n=  262 win= 27.9% expR=-0.124 t=-1.1 PF=0.86
+age 2-14d                          n=   88 win= 33.0% expR=+0.015 t=+0.1 PF=1.02
+age 14-90d                         n=   40 win= 30.0% expR=-0.043 t=-0.2 PF=0.95
+age > 90d                          n=   16  (too few)
+nlev >= 3                          n=   92 win= 34.8% expR=+0.120 t=+0.6 PF=1.16
+major & with trend                 n=    7  (too few)
+major & against trend              n=   36 win= 36.1% expR=+0.227 t=+0.7 PF=1.31
+age>=14 & with trend               n=    0  (too few)
+age>=14 & against trend            n=   45 win= 24.4% expR=-0.203 t=-0.8 PF=0.76
+
+--- fade tgt=3.0R [HO]
+ALL                                n=  303 win= 25.4% expR=-0.280 t=-3.0 PF=0.69
+with 4h trend                      n=  105 win= 27.6% expR=-0.181 t=-1.1 PF=0.79
+against 4h trend                   n=  152 win= 25.0% expR=-0.288 t=-2.2 PF=0.68
+no 4h trend                        n=   46 win= 21.7% expR=-0.479 t=-2.2 PF=0.49
+src has D                          n=  291 win= 25.1% expR=-0.295 t=-3.1 PF=0.68
+src has W                          n=   50 win= 20.0% expR=-0.472 t=-2.2 PF=0.50
+src has M                          n=   13  (too few)
+src has P4                         n=  185 win= 27.0% expR=-0.217 t=-1.8 PF=0.76
+src has PD                         n=   41 win= 29.3% expR=-0.063 t=-0.2 PF=0.92
+W or M (major)                     n=   50 win= 20.0% expR=-0.472 t=-2.2 PF=0.50
+age < 2d                           n=  184 win= 24.5% expR=-0.346 t=-2.9 PF=0.63
+age 2-14d                          n=   72 win= 27.8% expR=-0.185 t=-0.9 PF=0.79
+age 14-90d                         n=   30 win= 26.7% expR=-0.131 t=-0.4 PF=0.85
+age > 90d                          n=   17  (too few)
+nlev >= 3                          n=   77 win= 28.6% expR=-0.164 t=-0.9 PF=0.81
+major & with trend                 n=    7  (too few)
+major & against trend              n=   32 win= 18.8% expR=-0.490 t=-1.9 PF=0.49
+age>=14 & with trend               n=    1  (too few)
+age>=14 & against trend            n=   38 win= 23.7% expR=-0.244 t=-0.9 PF=0.72
+
+--- retest tgt=2.5R [TR]
+ALL                                n=  428 win= 27.3% expR=-0.163 t=-2.2 PF=0.79
+with 4h trend                      n=  240 win= 30.8% expR=-0.039 t=-0.4 PF=0.95
+against 4h trend                   n=  134 win= 23.9% expR=-0.291 t=-2.3 PF=0.65
+no 4h trend                        n=   54 win= 20.4% expR=-0.397 t=-2.1 PF=0.54
+src has D                          n=  408 win= 27.9% expR=-0.140 t=-1.8 PF=0.82
+src has W                          n=   59 win= 30.5% expR=-0.053 t=-0.3 PF=0.93
+src has M                          n=   12  (too few)
+src has P4                         n=  284 win= 28.2% expR=-0.137 t=-1.5 PF=0.82
+src has PD                         n=   67 win= 28.4% expR=-0.142 t=-0.8 PF=0.82
+W or M (major)                     n=   60 win= 31.7% expR=-0.012 t=-0.1 PF=0.98
+age < 2d                           n=  289 win= 25.6% expR=-0.211 t=-2.4 PF=0.74
+age 2-14d                          n=   95 win= 29.5% expR=-0.139 t=-0.9 PF=0.82
+age 14-90d                         n=   26  (too few)
+age > 90d                          n=   18  (too few)
+nlev >= 3                          n=  133 win= 27.1% expR=-0.177 t=-1.4 PF=0.78
+major & with trend                 n=   43 win= 32.6% expR=+0.007 t=+0.0 PF=1.01
+major & against trend              n=    4  (too few)
+age>=14 & with trend               n=   34 win= 38.2% expR=+0.245 t=+0.8 PF=1.37
+age>=14 & against trend            n=    0  (too few)
+
+--- retest tgt=2.5R [VA]
+ALL                                n=  181 win= 30.9% expR=-0.105 t=-0.9 PF=0.87
+with 4h trend                      n=   99 win= 33.3% expR=-0.011 t=-0.1 PF=0.98
+against 4h trend                   n=   63 win= 27.0% expR=-0.245 t=-1.3 PF=0.70
+no 4h trend                        n=   19  (too few)
+src has D                          n=  175 win= 32.0% expR=-0.069 t=-0.6 PF=0.91
+src has W                          n=   30 win= 36.7% expR=+0.159 t=+0.5 PF=1.23
+src has M                          n=    8  (too few)
+src has P4                         n=  122 win= 29.5% expR=-0.128 t=-0.9 PF=0.84
+src has PD                         n=   28  (too few)
+W or M (major)                     n=   32 win= 37.5% expR=+0.187 t=+0.6 PF=1.27
+age < 2d                           n=  114 win= 28.1% expR=-0.234 t=-1.7 PF=0.71
+age 2-14d                          n=   43 win= 30.2% expR=-0.064 t=-0.3 PF=0.92
+age 14-90d                         n=   18  (too few)
+age > 90d                          n=    6  (too few)
+nlev >= 3                          n=   59 win= 28.8% expR=-0.150 t=-0.7 PF=0.81
+major & with trend                 n=   22  (too few)
+major & against trend              n=    2  (too few)
+age>=14 & with trend               n=   18  (too few)
+age>=14 & against trend            n=    0  (too few)
+
+--- retest tgt=2.5R [HO]
+ALL                                n=  224 win= 27.2% expR=-0.199 t=-1.9 PF=0.76
+with 4h trend                      n=  130 win= 27.7% expR=-0.177 t=-1.3 PF=0.78
+against 4h trend                   n=   72 win= 26.4% expR=-0.241 t=-1.4 PF=0.71
+no 4h trend                        n=   22  (too few)
+src has D                          n=  221 win= 26.7% expR=-0.218 t=-2.1 PF=0.74
+src has W                          n=   31 win= 16.1% expR=-0.561 t=-2.4 PF=0.40
+src has M                          n=    8  (too few)
+src has P4                         n=  145 win= 24.8% expR=-0.285 t=-2.3 PF=0.66
+src has PD                         n=   34 win= 14.7% expR=-0.610 t=-2.9 PF=0.36
+W or M (major)                     n=   32 win= 15.6% expR=-0.579 t=-2.5 PF=0.39
+age < 2d                           n=  139 win= 30.2% expR=-0.091 t=-0.7 PF=0.88
+age 2-14d                          n=   59 win= 23.7% expR=-0.344 t=-1.8 PF=0.60
+age 14-90d                         n=   21  (too few)
+age > 90d                          n=    5  (too few)
+nlev >= 3                          n=   64 win= 20.3% expR=-0.444 t=-2.6 PF=0.50
+major & with trend                 n=   24  (too few)
+major & against trend              n=    6  (too few)
+age>=14 & with trend               n=   19  (too few)
+age>=14 & against trend            n=    1  (too few)
+
+--- follow tgt=2.5R [TR]
+ALL                                n=  583 win= 31.4% expR=-0.028 t=-0.4 PF=0.96
+with 4h trend                      n=  325 win= 32.3% expR=+0.003 t=+0.0 PF=1.00
+against 4h trend                   n=  186 win= 31.7% expR=-0.010 t=-0.1 PF=0.99
+no 4h trend                        n=   72 win= 26.4% expR=-0.216 t=-1.2 PF=0.74
+src has D                          n=  559 win= 31.8% expR=-0.010 t=-0.2 PF=0.99
+src has W                          n=   99 win= 38.4% expR=+0.198 t=+1.2 PF=1.29
+src has M                          n=   21  (too few)
+src has P4                         n=  402 win= 31.1% expR=-0.041 t=-0.5 PF=0.95
+src has PD                         n=  103 win= 35.0% expR=+0.061 t=+0.4 PF=1.08
+W or M (major)                     n=  100 win= 38.0% expR=+0.186 t=+1.1 PF=1.27
+age < 2d                           n=  369 win= 30.4% expR=-0.066 t=-0.8 PF=0.91
+age 2-14d                          n=  142 win= 32.4% expR=-0.001 t=-0.0 PF=1.00
+age 14-90d                         n=   49 win= 30.6% expR=-0.042 t=-0.2 PF=0.94
+age > 90d                          n=   23  (too few)
+nlev >= 3                          n=  205 win= 33.2% expR=+0.027 t=+0.2 PF=1.04
+major & with trend                 n=   69 win= 34.8% expR=+0.062 t=+0.3 PF=1.09
+major & against trend              n=    9  (too few)
+age>=14 & with trend               n=   56 win= 33.9% expR=+0.082 t=+0.4 PF=1.12
+age>=14 & against trend            n=    0  (too few)
+
+--- follow tgt=2.5R [VA]
+ALL                                n=  263 win= 30.0% expR=-0.146 t=-1.5 PF=0.82
+with 4h trend                      n=  149 win= 32.9% expR=-0.036 t=-0.3 PF=0.95
+against 4h trend                   n=   92 win= 26.1% expR=-0.307 t=-2.0 PF=0.64
+no 4h trend                        n=   22  (too few)
+src has D                          n=  256 win= 30.5% expR=-0.132 t=-1.3 PF=0.84
+src has W                          n=   47 win= 27.7% expR=-0.230 t=-1.0 PF=0.72
+src has M                          n=   15  (too few)
+src has P4                         n=  177 win= 28.2% expR=-0.211 t=-1.8 PF=0.75
+src has PD                         n=   44 win= 25.0% expR=-0.323 t=-1.5 PF=0.62
+W or M (major)                     n=   49 win= 26.5% expR=-0.267 t=-1.2 PF=0.68
+age < 2d                           n=  166 win= 30.7% expR=-0.136 t=-1.1 PF=0.83
+age 2-14d                          n=   60 win= 23.3% expR=-0.344 t=-1.8 PF=0.61
+age 14-90d                         n=   27  (too few)
+age > 90d                          n=   10  (too few)
+nlev >= 3                          n=   89 win= 25.8% expR=-0.304 t=-1.9 PF=0.65
+major & with trend                 n=   36 win= 25.0% expR=-0.271 t=-1.1 PF=0.68
+major & against trend              n=    5  (too few)
+age>=14 & with trend               n=   29  (too few)
+age>=14 & against trend            n=    2  (too few)
+
+--- follow tgt=2.5R [HO]
+ALL                                n=  299 win= 28.1% expR=-0.214 t=-2.4 PF=0.75
+with 4h trend                      n=  166 win= 28.9% expR=-0.177 t=-1.4 PF=0.79
+against 4h trend                   n=  102 win= 25.5% expR=-0.312 t=-2.1 PF=0.65
+no 4h trend                        n=   31 win= 32.3% expR=-0.086 t=-0.3 PF=0.89
+src has D                          n=  296 win= 27.7% expR=-0.227 t=-2.5 PF=0.73
+src has W                          n=   41 win= 22.0% expR=-0.401 t=-1.8 PF=0.56
+src has M                          n=   11  (too few)
+src has P4                         n=  193 win= 26.9% expR=-0.255 t=-2.3 PF=0.70
+src has PD                         n=   45 win= 22.2% expR=-0.392 t=-1.8 PF=0.57
+W or M (major)                     n=   42 win= 21.4% expR=-0.419 t=-1.9 PF=0.54
+age < 2d                           n=  187 win= 29.4% expR=-0.187 t=-1.6 PF=0.78
+age 2-14d                          n=   79 win= 26.6% expR=-0.241 t=-1.4 PF=0.72
+age 14-90d                         n=   28  (too few)
+age > 90d                          n=    5  (too few)
+nlev >= 3                          n=   88 win= 26.1% expR=-0.257 t=-1.6 PF=0.70
+major & with trend                 n=   31 win= 19.4% expR=-0.490 t=-1.9 PF=0.48
+major & against trend              n=    6  (too few)
+age>=14 & with trend               n=   24  (too few)
+age>=14 & against trend            n=    1  (too few)
+== 15m: bars=310770 sweep-bars=5070 levels=12482
+
+--- fade tgt=2.0R [TR]
+ALL                                n=  674 win= 28.8% expR=-0.371 t=-7.4 PF=0.56
+with 4h trend                      n=  261 win= 26.1% expR=-0.443 t=-5.8 PF=0.48
+against 4h trend                   n=  330 win= 30.6% expR=-0.330 t=-4.5 PF=0.60
+no 4h trend                        n=   83 win= 30.1% expR=-0.308 t=-2.1 PF=0.62
+src has D                          n=  639 win= 29.0% expR=-0.369 t=-7.2 PF=0.56
+src has W                          n=   86 win= 32.6% expR=-0.294 t=-2.1 PF=0.63
+src has M                          n=   21  (too few)
+src has P4                         n=  390 win= 29.5% expR=-0.359 t=-5.5 PF=0.56
+src has PD                         n=   82 win= 26.8% expR=-0.442 t=-3.3 PF=0.48
+W or M (major)                     n=   89 win= 33.7% expR=-0.255 t=-1.8 PF=0.67
+age < 2d                           n=  434 win= 30.9% expR=-0.315 t=-4.9 PF=0.62
+age 2-14d                          n=  137 win= 24.1% expR=-0.528 t=-5.2 PF=0.41
+age 14-90d                         n=   62 win= 22.6% expR=-0.514 t=-3.3 PF=0.43
+age > 90d                          n=   41 win= 31.7% expR=-0.225 t=-1.1 PF=0.71
+nlev >= 3                          n=  128 win= 27.3% expR=-0.421 t=-3.9 PF=0.49
+major & with trend                 n=    8  (too few)
+major & against trend              n=   65 win= 35.4% expR=-0.211 t=-1.2 PF=0.73
+age>=14 & with trend               n=    3  (too few)
+age>=14 & against trend            n=   80 win= 26.2% expR=-0.420 t=-2.9 PF=0.51
+
+--- fade tgt=2.0R [VA]
+ALL                                n=  265 win= 36.6% expR=-0.188 t=-2.2 PF=0.76
+with 4h trend                      n=  106 win= 41.5% expR=-0.068 t=-0.5 PF=0.90
+against 4h trend                   n=  116 win= 34.5% expR=-0.239 t=-1.8 PF=0.71
+no 4h trend                        n=   43 win= 30.2% expR=-0.348 t=-1.7 PF=0.60
+src has D                          n=  254 win= 35.8% expR=-0.215 t=-2.5 PF=0.73
+src has W                          n=   45 win= 40.0% expR=-0.081 t=-0.4 PF=0.89
+src has M                          n=    9  (too few)
+src has P4                         n=  160 win= 38.1% expR=-0.141 t=-1.3 PF=0.81
+src has PD                         n=   44 win= 36.4% expR=-0.258 t=-1.3 PF=0.67
+W or M (major)                     n=   45 win= 40.0% expR=-0.081 t=-0.4 PF=0.89
+age < 2d                           n=  153 win= 37.9% expR=-0.144 t=-1.3 PF=0.81
+age 2-14d                          n=   65 win= 38.5% expR=-0.160 t=-0.9 PF=0.78
+age 14-90d                         n=   31 win= 29.0% expR=-0.394 t=-1.6 PF=0.55
+age > 90d                          n=   16  (too few)
+nlev >= 3                          n=   66 win= 39.4% expR=-0.123 t=-0.7 PF=0.83
+major & with trend                 n=    5  (too few)
+major & against trend              n=   30 win= 33.3% expR=-0.248 t=-1.0 PF=0.70
+age>=14 & with trend               n=    2  (too few)
+age>=14 & against trend            n=   35 win= 28.6% expR=-0.395 t=-1.7 PF=0.56
+
+--- fade tgt=2.0R [HO]
+ALL                                n=  179 win= 30.2% expR=-0.345 t=-3.4 PF=0.60
+with 4h trend                      n=   74 win= 32.4% expR=-0.281 t=-1.7 PF=0.66
+against 4h trend                   n=   82 win= 28.0% expR=-0.421 t=-2.9 PF=0.52
+no 4h trend                        n=   23  (too few)
+src has D                          n=  171 win= 29.2% expR=-0.374 t=-3.6 PF=0.57
+src has W                          n=   33 win= 21.2% expR=-0.634 t=-3.1 PF=0.34
+src has M                          n=   10  (too few)
+src has P4                         n=  113 win= 26.5% expR=-0.447 t=-3.6 PF=0.50
+src has PD                         n=   36 win= 25.0% expR=-0.522 t=-2.5 PF=0.43
+W or M (major)                     n=   33 win= 21.2% expR=-0.634 t=-3.1 PF=0.34
+age < 2d                           n=   93 win= 32.3% expR=-0.282 t=-1.9 PF=0.66
+age 2-14d                          n=   43 win= 23.3% expR=-0.565 t=-3.0 PF=0.40
+age 14-90d                         n=   24  (too few)
+age > 90d                          n=   19  (too few)
+nlev >= 3                          n=   52 win= 23.1% expR=-0.561 t=-3.2 PF=0.40
+major & with trend                 n=    6  (too few)
+major & against trend              n=   25  (too few)
+age>=14 & with trend               n=    3  (too few)
+age>=14 & against trend            n=   35 win= 34.3% expR=-0.220 t=-0.9 PF=0.72
+
+--- fade tgt=3.0R [TR]
+ALL                                n=  674 win= 24.3% expR=-0.359 t=-6.1 PF=0.60
+with 4h trend                      n=  261 win= 22.6% expR=-0.413 t=-4.5 PF=0.54
+against 4h trend                   n=  330 win= 25.2% expR=-0.339 t=-4.0 PF=0.62
+no 4h trend                        n=   83 win= 26.5% expR=-0.267 t=-1.5 PF=0.69
+src has D                          n=  639 win= 24.4% expR=-0.356 t=-5.9 PF=0.60
+src has W                          n=   86 win= 25.6% expR=-0.357 t=-2.2 PF=0.59
+src has M                          n=   21  (too few)
+src has P4                         n=  390 win= 24.4% expR=-0.382 t=-5.1 PF=0.57
+src has PD                         n=   82 win= 20.7% expR=-0.508 t=-3.3 PF=0.45
+W or M (major)                     n=   89 win= 25.8% expR=-0.339 t=-2.1 PF=0.61
+age < 2d                           n=  434 win= 26.5% expR=-0.277 t=-3.6 PF=0.68
+age 2-14d                          n=  137 win= 21.9% expR=-0.499 t=-4.2 PF=0.45
+age 14-90d                         n=   62 win= 17.7% expR=-0.539 t=-3.0 PF=0.44
+age > 90d                          n=   41 win= 19.5% expR=-0.477 t=-2.2 PF=0.48
+nlev >= 3                          n=  128 win= 22.7% expR=-0.443 t=-3.6 PF=0.50
+major & with trend                 n=    8  (too few)
+major & against trend              n=   65 win= 26.2% expR=-0.340 t=-1.8 PF=0.62
+age>=14 & with trend               n=    3  (too few)
+age>=14 & against trend            n=   80 win= 18.8% expR=-0.525 t=-3.4 PF=0.45
+
+--- fade tgt=3.0R [VA]
+ALL                                n=  265 win= 33.6% expR=-0.095 t=-0.9 PF=0.88
+with 4h trend                      n=  106 win= 41.5% expR=+0.118 t=+0.7 PF=1.17
+against 4h trend                   n=  116 win= 29.3% expR=-0.198 t=-1.3 PF=0.77
+no 4h trend                        n=   43 win= 25.6% expR=-0.344 t=-1.4 PF=0.63
+src has D                          n=  254 win= 33.1% expR=-0.111 t=-1.1 PF=0.87
+src has W                          n=   45 win= 35.6% expR=+0.033 t=+0.1 PF=1.04
+src has M                          n=    9  (too few)
+src has P4                         n=  160 win= 35.6% expR=-0.061 t=-0.5 PF=0.92
+src has PD                         n=   44 win= 31.8% expR=-0.255 t=-1.1 PF=0.70
+W or M (major)                     n=   45 win= 35.6% expR=+0.033 t=+0.1 PF=1.04
+age < 2d                           n=  153 win= 34.6% expR=-0.057 t=-0.4 PF=0.93
+age 2-14d                          n=   65 win= 36.9% expR=-0.031 t=-0.1 PF=0.96
+age 14-90d                         n=   31 win= 29.0% expR=-0.203 t=-0.7 PF=0.77
+age > 90d                          n=   16  (too few)
+nlev >= 3                          n=   66 win= 36.4% expR=-0.023 t=-0.1 PF=0.97
+major & with trend                 n=    5  (too few)
+major & against trend              n=   30 win= 30.0% expR=-0.117 t=-0.4 PF=0.86
+age>=14 & with trend               n=    2  (too few)
+age>=14 & against trend            n=   35 win= 22.9% expR=-0.370 t=-1.3 PF=0.62
+
+--- fade tgt=3.0R [HO]
+ALL                                n=  179 win= 25.1% expR=-0.322 t=-2.7 PF=0.65
+with 4h trend                      n=   74 win= 31.1% expR=-0.098 t=-0.5 PF=0.89
+against 4h trend                   n=   82 win= 20.7% expR=-0.478 t=-2.9 PF=0.51
+no 4h trend                        n=   23  (too few)
+src has D                          n=  171 win= 24.6% expR=-0.349 t=-2.9 PF=0.62
+src has W                          n=   33 win= 21.2% expR=-0.488 t=-1.9 PF=0.49
+src has M                          n=   10  (too few)
+src has P4                         n=  113 win= 22.1% expR=-0.417 t=-2.9 PF=0.56
+src has PD                         n=   36 win= 25.0% expR=-0.333 t=-1.2 PF=0.64
+W or M (major)                     n=   33 win= 21.2% expR=-0.488 t=-1.9 PF=0.49
+age < 2d                           n=   93 win= 26.9% expR=-0.261 t=-1.5 PF=0.71
+age 2-14d                          n=   43 win= 20.9% expR=-0.523 t=-2.3 PF=0.46
+age 14-90d                         n=   24  (too few)
+age > 90d                          n=   19  (too few)
+nlev >= 3                          n=   52 win= 23.1% expR=-0.373 t=-1.7 PF=0.60
+major & with trend                 n=    6  (too few)
+major & against trend              n=   25  (too few)
+age>=14 & with trend               n=    3  (too few)
+age>=14 & against trend            n=   35 win= 28.6% expR=-0.152 t=-0.5 PF=0.82
+
+--- retest tgt=2.5R [TR]
+ALL                                n=  466 win= 25.3% expR=-0.278 t=-4.1 PF=0.67
+with 4h trend                      n=  256 win= 25.0% expR=-0.283 t=-3.1 PF=0.66
+against 4h trend                   n=  158 win= 29.1% expR=-0.169 t=-1.4 PF=0.79
+no 4h trend                        n=   52 win= 15.4% expR=-0.584 t=-3.3 PF=0.38
+src has D                          n=  450 win= 25.1% expR=-0.282 t=-4.0 PF=0.67
+src has W                          n=   72 win= 26.4% expR=-0.181 t=-1.0 PF=0.77
+src has M                          n=   17  (too few)
+src has P4                         n=  285 win= 26.0% expR=-0.253 t=-2.9 PF=0.70
+src has PD                         n=   70 win= 24.3% expR=-0.274 t=-1.5 PF=0.68
+W or M (major)                     n=   74 win= 25.7% expR=-0.207 t=-1.2 PF=0.75
+age < 2d                           n=  297 win= 26.9% expR=-0.232 t=-2.6 PF=0.72
+age 2-14d                          n=  105 win= 21.9% expR=-0.405 t=-3.0 PF=0.53
+age 14-90d                         n=   39 win= 25.6% expR=-0.217 t=-0.9 PF=0.74
+age > 90d                          n=   25  (too few)
+nlev >= 3                          n=  133 win= 23.3% expR=-0.344 t=-2.8 PF=0.60
+major & with trend                 n=   57 win= 28.1% expR=-0.116 t=-0.6 PF=0.85
+major & against trend              n=    3  (too few)
+age>=14 & with trend               n=   50 win= 26.0% expR=-0.194 t=-0.9 PF=0.76
+age>=14 & against trend            n=    0  (too few)
+
+--- retest tgt=2.5R [VA]
+ALL                                n=  186 win= 20.4% expR=-0.473 t=-4.6 PF=0.49
+with 4h trend                      n=  109 win= 19.3% expR=-0.501 t=-3.8 PF=0.47
+against 4h trend                   n=   56 win= 21.4% expR=-0.468 t=-2.6 PF=0.48
+no 4h trend                        n=   21  (too few)
+src has D                          n=  183 win= 20.2% expR=-0.480 t=-4.7 PF=0.48
+src has W                          n=   37 win= 29.7% expR=-0.103 t=-0.4 PF=0.87
+src has M                          n=    8  (too few)
+src has P4                         n=  125 win= 19.2% expR=-0.516 t=-4.2 PF=0.45
+src has PD                         n=   34 win= 23.5% expR=-0.338 t=-1.3 PF=0.62
+W or M (major)                     n=   38 win= 28.9% expR=-0.130 t=-0.5 PF=0.84
+age < 2d                           n=   96 win= 17.7% expR=-0.596 t=-4.5 PF=0.38
+age 2-14d                          n=   61 win= 14.8% expR=-0.646 t=-4.0 PF=0.35
+age 14-90d                         n=   19  (too few)
+age > 90d                          n=   10  (too few)
+nlev >= 3                          n=   70 win= 20.0% expR=-0.461 t=-2.7 PF=0.50
+major & with trend                 n=   25  (too few)
+major & against trend              n=    5  (too few)
+age>=14 & with trend               n=   22  (too few)
+age>=14 & against trend            n=    0  (too few)
+
+--- retest tgt=2.5R [HO]
+ALL                                n=  176 win= 25.0% expR=-0.316 t=-2.8 PF=0.63
+with 4h trend                      n=   93 win= 25.8% expR=-0.322 t=-2.1 PF=0.63
+against 4h trend                   n=   61 win= 26.2% expR=-0.238 t=-1.2 PF=0.72
+no 4h trend                        n=   22  (too few)
+src has D                          n=  171 win= 24.0% expR=-0.351 t=-3.2 PF=0.60
+src has W                          n=   29  (too few)
+src has M                          n=   10  (too few)
+src has P4                         n=  106 win= 27.4% expR=-0.258 t=-1.8 PF=0.69
+src has PD                         n=   30 win= 36.7% expR=+0.053 t=+0.2 PF=1.07
+W or M (major)                     n=   30 win= 30.0% expR=-0.167 t=-0.6 PF=0.79
+age < 2d                           n=   99 win= 21.2% expR=-0.412 t=-2.9 PF=0.54
+age 2-14d                          n=   49 win= 28.6% expR=-0.201 t=-0.9 PF=0.76
+age 14-90d                         n=   21  (too few)
+age > 90d                          n=    7  (too few)
+nlev >= 3                          n=   47 win= 29.8% expR=-0.173 t=-0.8 PF=0.79
+major & with trend                 n=   20  (too few)
+major & against trend              n=    9  (too few)
+age>=14 & with trend               n=   23  (too few)
+age>=14 & against trend            n=    0  (too few)
+
+--- follow tgt=2.5R [TR]
+ALL                                n=  693 win= 31.2% expR=-0.115 t=-1.9 PF=0.86
+with 4h trend                      n=  395 win= 32.2% expR=-0.071 t=-0.9 PF=0.91
+against 4h trend                   n=  225 win= 31.6% expR=-0.106 t=-1.0 PF=0.87
+no 4h trend                        n=   73 win= 24.7% expR=-0.377 t=-2.2 PF=0.58
+src has D                          n=  668 win= 31.3% expR=-0.112 t=-1.8 PF=0.86
+src has W                          n=  115 win= 33.9% expR=+0.022 t=+0.1 PF=1.03
+src has M                          n=   27  (too few)
+src has P4                         n=  451 win= 34.8% expR=+0.005 t=+0.1 PF=1.01
+src has PD                         n=  118 win= 36.4% expR=+0.077 t=+0.5 PF=1.10
+W or M (major)                     n=  117 win= 33.3% expR=+0.002 t=+0.0 PF=1.00
+age < 2d                           n=  434 win= 29.3% expR=-0.192 t=-2.6 PF=0.77
+age 2-14d                          n=  165 win= 35.2% expR=+0.011 t=+0.1 PF=1.01
+age 14-90d                         n=   60 win= 36.7% expR=+0.144 t=+0.7 PF=1.20
+age > 90d                          n=   34 win= 26.5% expR=-0.201 t=-0.7 PF=0.76
+nlev >= 3                          n=  220 win= 36.4% expR=+0.063 t=+0.6 PF=1.09
+major & with trend                 n=   84 win= 32.1% expR=-0.018 t=-0.1 PF=0.98
+major & against trend              n=    8  (too few)
+age>=14 & with trend               n=   75 win= 34.7% expR=+0.080 t=+0.4 PF=1.11
+age>=14 & against trend            n=    0  (too few)
+
+--- follow tgt=2.5R [VA]
+ALL                                n=  279 win= 33.0% expR=-0.100 t=-1.0 PF=0.88
+with 4h trend                      n=  165 win= 33.9% expR=-0.071 t=-0.5 PF=0.92
+against 4h trend                   n=   88 win= 31.8% expR=-0.115 t=-0.7 PF=0.86
+no 4h trend                        n=   26  (too few)
+src has D                          n=  274 win= 32.8% expR=-0.104 t=-1.0 PF=0.88
+src has W                          n=   54 win= 37.0% expR=+0.095 t=+0.4 PF=1.13
+src has M                          n=   17  (too few)
+src has P4                         n=  182 win= 31.3% expR=-0.151 t=-1.3 PF=0.82
+src has PD                         n=   52 win= 34.6% expR=+0.013 t=+0.1 PF=1.02
+W or M (major)                     n=   57 win= 38.6% expR=+0.151 t=+0.7 PF=1.21
+age < 2d                           n=  147 win= 31.3% expR=-0.172 t=-1.3 PF=0.80
+age 2-14d                          n=   86 win= 27.9% expR=-0.253 t=-1.5 PF=0.71
+age 14-90d                         n=   30 win= 46.7% expR=+0.354 t=+1.1 PF=1.55
+age > 90d                          n=   16  (too few)
+nlev >= 3                          n=   98 win= 30.6% expR=-0.158 t=-1.0 PF=0.81
+major & with trend                 n=   38 win= 36.8% expR=+0.078 t=+0.3 PF=1.10
+major & against trend              n=    9  (too few)
+age>=14 & with trend               n=   35 win= 45.7% expR=+0.390 t=+1.3 PF=1.60
+age>=14 & against trend            n=    2  (too few)
+
+--- follow tgt=2.5R [HO]
+ALL                                n=  240 win= 27.5% expR=-0.297 t=-3.0 PF=0.67
+with 4h trend                      n=  129 win= 29.5% expR=-0.227 t=-1.6 PF=0.74
+against 4h trend                   n=   85 win= 27.1% expR=-0.322 t=-1.9 PF=0.64
+no 4h trend                        n=   26  (too few)
+src has D                          n=  234 win= 27.4% expR=-0.301 t=-3.0 PF=0.66
+src has W                          n=   43 win= 30.2% expR=-0.182 t=-0.7 PF=0.79
+src has M                          n=   14  (too few)
+src has P4                         n=  152 win= 28.9% expR=-0.260 t=-2.0 PF=0.71
+src has PD                         n=   46 win= 28.3% expR=-0.269 t=-1.1 PF=0.70
+W or M (major)                     n=   44 win= 29.5% expR=-0.206 t=-0.8 PF=0.76
+age < 2d                           n=  132 win= 25.8% expR=-0.343 t=-2.6 PF=0.63
+age 2-14d                          n=   72 win= 31.9% expR=-0.183 t=-1.0 PF=0.78
+age 14-90d                         n=   28  (too few)
+age > 90d                          n=    8  (too few)
+nlev >= 3                          n=   69 win= 27.5% expR=-0.290 t=-1.5 PF=0.68
+major & with trend                 n=   33 win= 33.3% expR=-0.077 t=-0.3 PF=0.91
+major & against trend              n=    9  (too few)
+age>=14 & with trend               n=   30 win= 26.7% expR=-0.301 t=-1.0 PF=0.67
+age>=14 & against trend            n=    0  (too few)
+== 5m: bars=932309 sweep-bars=5393 levels=12482
+
+--- fade tgt=2.0R [TR]
+ALL                                n=  469 win= 33.5% expR=-0.291 t=-4.8 PF=0.63
+with 4h trend                      n=  194 win= 34.0% expR=-0.287 t=-3.1 PF=0.63
+against 4h trend                   n=  220 win= 33.6% expR=-0.266 t=-3.0 PF=0.66
+no 4h trend                        n=   55 win= 30.9% expR=-0.404 t=-2.4 PF=0.51
+src has D                          n=  445 win= 33.0% expR=-0.302 t=-4.9 PF=0.62
+src has W                          n=   76 win= 39.5% expR=-0.033 t=-0.2 PF=0.95
+src has M                          n=   16  (too few)
+src has P4                         n=  282 win= 34.8% expR=-0.240 t=-3.0 PF=0.69
+src has PD                         n=   73 win= 34.2% expR=-0.219 t=-1.4 PF=0.71
+W or M (major)                     n=   77 win= 40.3% expR=-0.026 t=-0.2 PF=0.96
+age < 2d                           n=  270 win= 33.3% expR=-0.311 t=-3.9 PF=0.61
+age 2-14d                          n=  118 win= 34.7% expR=-0.241 t=-2.0 PF=0.68
+age 14-90d                         n=   41 win= 19.5% expR=-0.711 t=-4.3 PF=0.27
+age > 90d                          n=   40 win= 45.0% expR=+0.130 t=+0.6 PF=1.21
+nlev >= 3                          n=  107 win= 37.4% expR=-0.118 t=-0.9 PF=0.83
+major & with trend                 n=    9  (too few)
+major & against trend              n=   57 win= 45.6% expR=+0.115 t=+0.6 PF=1.19
+age>=14 & with trend               n=    3  (too few)
+age>=14 & against trend            n=   64 win= 31.2% expR=-0.279 t=-1.6 PF=0.66
+
+--- fade tgt=2.0R [VA]
+ALL                                n=  128 win= 41.4% expR=-0.170 t=-1.5 PF=0.75
+with 4h trend                      n=   57 win= 45.6% expR=-0.158 t=-1.0 PF=0.75
+against 4h trend                   n=   54 win= 37.0% expR=-0.239 t=-1.3 PF=0.68
+no 4h trend                        n=   17  (too few)
+src has D                          n=  126 win= 40.5% expR=-0.194 t=-1.7 PF=0.72
+src has W                          n=   27  (too few)
+src has M                          n=    8  (too few)
+src has P4                         n=   73 win= 43.8% expR=-0.133 t=-0.9 PF=0.81
+src has PD                         n=   21  (too few)
+W or M (major)                     n=   27  (too few)
+age < 2d                           n=   69 win= 42.0% expR=-0.178 t=-1.1 PF=0.75
+age 2-14d                          n=   35 win= 37.1% expR=-0.236 t=-1.1 PF=0.65
+age 14-90d                         n=   17  (too few)
+age > 90d                          n=    7  (too few)
+nlev >= 3                          n=   33 win= 42.4% expR=-0.110 t=-0.5 PF=0.85
+major & with trend                 n=    4  (too few)
+major & against trend              n=   17  (too few)
+age>=14 & with trend               n=    2  (too few)
+age>=14 & against trend            n=   17  (too few)
+
+--- fade tgt=2.0R [HO]
+ALL                                n=   91 win= 38.5% expR=-0.155 t=-1.1 PF=0.79
+with 4h trend                      n=   35 win= 42.9% expR=-0.019 t=-0.1 PF=0.97
+against 4h trend                   n=   42 win= 33.3% expR=-0.304 t=-1.5 PF=0.63
+no 4h trend                        n=   14  (too few)
+src has D                          n=   88 win= 38.6% expR=-0.151 t=-1.0 PF=0.80
+src has W                          n=   21  (too few)
+src has M                          n=    4  (too few)
+src has P4                         n=   62 win= 43.5% expR=+0.011 t=+0.1 PF=1.02
+src has PD                         n=   18  (too few)
+W or M (major)                     n=   21  (too few)
+age < 2d                           n=   41 win= 34.1% expR=-0.268 t=-1.2 PF=0.68
+age 2-14d                          n=   25  (too few)
+age 14-90d                         n=   13  (too few)
+age > 90d                          n=   12  (too few)
+nlev >= 3                          n=   28  (too few)
+major & with trend                 n=    4  (too few)
+major & against trend              n=   15  (too few)
+age>=14 & with trend               n=    2  (too few)
+age>=14 & against trend            n=   22  (too few)
+
+--- fade tgt=3.0R [TR]
+ALL                                n=  469 win= 29.4% expR=-0.309 t=-4.5 PF=0.63
+with 4h trend                      n=  194 win= 32.0% expR=-0.236 t=-2.2 PF=0.71
+against 4h trend                   n=  220 win= 27.7% expR=-0.338 t=-3.4 PF=0.60
+no 4h trend                        n=   55 win= 27.3% expR=-0.453 t=-2.5 PF=0.47
+src has D                          n=  445 win= 29.0% expR=-0.321 t=-4.6 PF=0.62
+src has W                          n=   76 win= 36.8% expR=+0.009 t=+0.0 PF=1.01
+src has M                          n=   16  (too few)
+src has P4                         n=  282 win= 30.1% expR=-0.269 t=-3.0 PF=0.67
+src has PD                         n=   73 win= 30.1% expR=-0.236 t=-1.3 PF=0.70
+W or M (major)                     n=   77 win= 37.7% expR=+0.016 t=+0.1 PF=1.02
+age < 2d                           n=  270 win= 29.6% expR=-0.285 t=-3.1 PF=0.66
+age 2-14d                          n=  118 win= 31.4% expR=-0.321 t=-2.5 PF=0.59
+age 14-90d                         n=   41 win= 17.1% expR=-0.810 t=-5.6 PF=0.20
+age > 90d                          n=   40 win= 35.0% expR=+0.080 t=+0.3 PF=1.11
+nlev >= 3                          n=  107 win= 33.6% expR=-0.144 t=-1.0 PF=0.81
+major & with trend                 n=    9  (too few)
+major & against trend              n=   57 win= 42.1% expR=+0.210 t=+0.9 PF=1.32
+age>=14 & with trend               n=    3  (too few)
+age>=14 & against trend            n=   64 win= 25.0% expR=-0.316 t=-1.6 PF=0.64
+
+--- fade tgt=3.0R [VA]
+ALL                                n=  128 win= 40.6% expR=-0.007 t=-0.1 PF=0.99
+with 4h trend                      n=   57 win= 45.6% expR=+0.001 t=+0.0 PF=1.00
+against 4h trend                   n=   54 win= 35.2% expR=-0.110 t=-0.5 PF=0.86
+no 4h trend                        n=   17  (too few)
+src has D                          n=  126 win= 39.7% expR=-0.036 t=-0.3 PF=0.95
+src has W                          n=   27  (too few)
+src has M                          n=    8  (too few)
+src has P4                         n=   73 win= 42.5% expR=+0.044 t=+0.2 PF=1.06
+src has PD                         n=   21  (too few)
+W or M (major)                     n=   27  (too few)
+age < 2d                           n=   69 win= 42.0% expR=+0.040 t=+0.2 PF=1.06
+age 2-14d                          n=   35 win= 37.1% expR=-0.069 t=-0.3 PF=0.90
+age 14-90d                         n=   17  (too few)
+age > 90d                          n=    7  (too few)
+nlev >= 3                          n=   33 win= 39.4% expR=+0.039 t=+0.1 PF=1.05
+major & with trend                 n=    4  (too few)
+major & against trend              n=   17  (too few)
+age>=14 & with trend               n=    2  (too few)
+age>=14 & against trend            n=   17  (too few)
+
+--- fade tgt=3.0R [HO]
+ALL                                n=   91 win= 35.2% expR=-0.019 t=-0.1 PF=0.98
+with 4h trend                      n=   35 win= 40.0% expR=+0.146 t=+0.5 PF=1.20
+against 4h trend                   n=   42 win= 28.6% expR=-0.201 t=-0.8 PF=0.76
+no 4h trend                        n=   14  (too few)
+src has D                          n=   88 win= 35.2% expR=+0.001 t=+0.0 PF=1.00
+src has W                          n=   21  (too few)
+src has M                          n=    4  (too few)
+src has P4                         n=   62 win= 38.7% expR=+0.145 t=+0.6 PF=1.20
+src has PD                         n=   18  (too few)
+W or M (major)                     n=   21  (too few)
+age < 2d                           n=   41 win= 34.1% expR=-0.046 t=-0.2 PF=0.94
+age 2-14d                          n=   25  (too few)
+age 14-90d                         n=   13  (too few)
+age > 90d                          n=   12  (too few)
+nlev >= 3                          n=   28  (too few)
+major & with trend                 n=    4  (too few)
+major & against trend              n=   15  (too few)
+age>=14 & with trend               n=    2  (too few)
+age>=14 & against trend            n=   22  (too few)
+
+--- retest tgt=2.5R [TR]
+ALL                                n=  425 win= 29.4% expR=-0.165 t=-2.2 PF=0.79
+with 4h trend                      n=  226 win= 29.2% expR=-0.179 t=-1.7 PF=0.78
+against 4h trend                   n=  151 win= 29.8% expR=-0.150 t=-1.2 PF=0.81
+no 4h trend                        n=   48 win= 29.2% expR=-0.149 t=-0.6 PF=0.82
+src has D                          n=  414 win= 29.2% expR=-0.172 t=-2.3 PF=0.79
+src has W                          n=   83 win= 32.5% expR=-0.052 t=-0.3 PF=0.93
+src has M                          n=   22  (too few)
+src has P4                         n=  284 win= 31.7% expR=-0.101 t=-1.1 PF=0.87
+src has PD                         n=   79 win= 31.6% expR=-0.138 t=-0.8 PF=0.82
+W or M (major)                     n=   86 win= 32.6% expR=-0.050 t=-0.3 PF=0.93
+age < 2d                           n=  229 win= 31.0% expR=-0.122 t=-1.2 PF=0.85
+age 2-14d                          n=  110 win= 28.2% expR=-0.246 t=-1.8 PF=0.69
+age 14-90d                         n=   52 win= 26.9% expR=-0.159 t=-0.7 PF=0.80
+age > 90d                          n=   34 win= 26.5% expR=-0.199 t=-0.8 PF=0.76
+nlev >= 3                          n=  139 win= 31.7% expR=-0.103 t=-0.8 PF=0.87
+major & with trend                 n=   58 win= 29.3% expR=-0.176 t=-0.9 PF=0.78
+major & against trend              n=   16  (too few)
+age>=14 & with trend               n=   69 win= 24.6% expR=-0.246 t=-1.4 PF=0.70
+age>=14 & against trend            n=    4  (too few)
+
+--- retest tgt=2.5R [VA]
+ALL                                n=   91 win= 38.5% expR=+0.072 t=+0.4 PF=1.10
+with 4h trend                      n=   45 win= 42.2% expR=+0.210 t=+0.8 PF=1.31
+against 4h trend                   n=   32 win= 37.5% expR=+0.031 t=+0.1 PF=1.04
+no 4h trend                        n=   14  (too few)
+src has D                          n=   91 win= 38.5% expR=+0.072 t=+0.4 PF=1.10
+src has W                          n=   22  (too few)
+src has M                          n=    8  (too few)
+src has P4                         n=   58 win= 36.2% expR=-0.023 t=-0.1 PF=0.97
+src has PD                         n=   26  (too few)
+W or M (major)                     n=   23  (too few)
+age < 2d                           n=   24  (too few)
+age 2-14d                          n=   32 win= 40.6% expR=+0.205 t=+0.7 PF=1.29
+age 14-90d                         n=   27  (too few)
+age > 90d                          n=    8  (too few)
+nlev >= 3                          n=   36 win= 41.7% expR=+0.104 t=+0.4 PF=1.15
+major & with trend                 n=   18  (too few)
+major & against trend              n=    1  (too few)
+age>=14 & with trend               n=   26  (too few)
+age>=14 & against trend            n=    1  (too few)
+
+--- retest tgt=2.5R [HO]
+ALL                                n=   76 win= 25.0% expR=-0.363 t=-2.2 PF=0.59
+with 4h trend                      n=   37 win= 24.3% expR=-0.429 t=-1.9 PF=0.52
+against 4h trend                   n=   27  (too few)
+no 4h trend                        n=   12  (too few)
+src has D                          n=   75 win= 25.3% expR=-0.352 t=-2.1 PF=0.61
+src has W                          n=   10  (too few)
+src has M                          n=    2  (too few)
+src has P4                         n=   43 win= 18.6% expR=-0.620 t=-3.2 PF=0.36
+src has PD                         n=   12  (too few)
+W or M (major)                     n=   10  (too few)
+age < 2d                           n=   37 win= 24.3% expR=-0.342 t=-1.4 PF=0.62
+age 2-14d                          n=   25  (too few)
+age 14-90d                         n=   12  (too few)
+age > 90d                          n=    2  (too few)
+nlev >= 3                          n=   23  (too few)
+major & with trend                 n=    8  (too few)
+major & against trend              n=    1  (too few)
+age>=14 & with trend               n=   11  (too few)
+age>=14 & against trend            n=    0  (too few)
+
+--- follow tgt=2.5R [TR]
+ALL                                n=  637 win= 32.8% expR=-0.114 t=-1.8 PF=0.86
+with 4h trend                      n=  363 win= 36.1% expR=+0.004 t=+0.0 PF=1.01
+against 4h trend                   n=  213 win= 28.6% expR=-0.277 t=-2.7 PF=0.67
+no 4h trend                        n=   61 win= 27.9% expR=-0.247 t=-1.2 PF=0.72
+src has D                          n=  615 win= 32.4% expR=-0.128 t=-2.0 PF=0.84
+src has W                          n=  132 win= 33.3% expR=-0.045 t=-0.3 PF=0.94
+src has M                          n=   33 win= 27.3% expR=-0.204 t=-0.7 PF=0.76
+src has P4                         n=  445 win= 34.6% expR=-0.061 t=-0.8 PF=0.92
+src has PD                         n=  134 win= 29.1% expR=-0.215 t=-1.6 PF=0.74
+W or M (major)                     n=  135 win= 32.6% expR=-0.071 t=-0.5 PF=0.91
+age < 2d                           n=  349 win= 33.8% expR=-0.104 t=-1.2 PF=0.87
+age 2-14d                          n=  170 win= 32.4% expR=-0.139 t=-1.2 PF=0.83
+age 14-90d                         n=   74 win= 32.4% expR=-0.049 t=-0.3 PF=0.94
+age > 90d                          n=   44 win= 27.3% expR=-0.209 t=-0.9 PF=0.75
+nlev >= 3                          n=  230 win= 35.2% expR=-0.006 t=-0.1 PF=0.99
+major & with trend                 n=   97 win= 33.0% expR=-0.033 t=-0.2 PF=0.96
+major & against trend              n=   19  (too few)
+age>=14 & with trend               n=   95 win= 30.5% expR=-0.108 t=-0.7 PF=0.87
+age>=14 & against trend            n=    4  (too few)
+
+--- follow tgt=2.5R [VA]
+ALL                                n=  128 win= 36.7% expR=-0.042 t=-0.3 PF=0.95
+with 4h trend                      n=   66 win= 34.8% expR=-0.101 t=-0.5 PF=0.88
+against 4h trend                   n=   46 win= 41.3% expR=+0.199 t=+0.8 PF=1.28
+no 4h trend                        n=   16  (too few)
+src has D                          n=  127 win= 36.2% expR=-0.060 t=-0.4 PF=0.93
+src has W                          n=   31 win= 41.9% expR=+0.046 t=+0.2 PF=1.06
+src has M                          n=   11  (too few)
+src has P4                         n=   80 win= 33.8% expR=-0.168 t=-1.0 PF=0.80
+src has PD                         n=   33 win= 33.3% expR=-0.151 t=-0.5 PF=0.82
+W or M (major)                     n=   33 win= 42.4% expR=+0.072 t=+0.2 PF=1.10
+age < 2d                           n=   41 win= 41.5% expR=+0.137 t=+0.5 PF=1.19
+age 2-14d                          n=   46 win= 41.3% expR=+0.106 t=+0.4 PF=1.14
+age 14-90d                         n=   31 win= 25.8% expR=-0.391 t=-1.5 PF=0.58
+age > 90d                          n=   10  (too few)
+nlev >= 3                          n=   47 win= 31.9% expR=-0.212 t=-0.9 PF=0.75
+major & with trend                 n=   25  (too few)
+major & against trend              n=    2  (too few)
+age>=14 & with trend               n=   31 win= 29.0% expR=-0.282 t=-1.0 PF=0.68
+age>=14 & against trend            n=    1  (too few)
+
+--- follow tgt=2.5R [HO]
+ALL                                n=  104 win= 27.9% expR=-0.359 t=-2.4 PF=0.61
+with 4h trend                      n=   54 win= 25.9% expR=-0.426 t=-2.1 PF=0.55
+against 4h trend                   n=   36 win= 33.3% expR=-0.196 t=-0.7 PF=0.77
+no 4h trend                        n=   14  (too few)
+src has D                          n=  103 win= 28.2% expR=-0.350 t=-2.3 PF=0.62
+src has W                          n=   16  (too few)
+src has M                          n=    4  (too few)
+src has P4                         n=   62 win= 27.4% expR=-0.365 t=-1.9 PF=0.60
+src has PD                         n=   17  (too few)
+W or M (major)                     n=   16  (too few)
+age < 2d                           n=   53 win= 20.8% expR=-0.611 t=-3.3 PF=0.39
+age 2-14d                          n=   31 win= 35.5% expR=-0.136 t=-0.5 PF=0.84
+age 14-90d                         n=   15  (too few)
+age > 90d                          n=    5  (too few)
+nlev >= 3                          n=   31 win= 29.0% expR=-0.247 t=-0.8 PF=0.73
+major & with trend                 n=   12  (too few)
+major & against trend              n=    1  (too few)
+age>=14 & with trend               n=   15  (too few)
+age>=14 & against trend            n=    0  (too few)

@@ -20,6 +20,8 @@ const NO_STUDIES = [];
 import { LogTradeModal } from "../components/TradeModal.jsx";
 import { TradingAccountPanel } from "../components/TradingAccountPanel.jsx";
 import { OrderBook } from "../components/OrderBook.jsx";
+import { FlowPanel } from "../components/FlowPanel.jsx";
+import { OldLevelsPanel } from "../components/OldLevelsPanel.jsx";
 import { OrderTicket, signalExpired } from "../components/OrderTicket.jsx";
 import { scalpApi, tradesApi, strategyApi, alertsApi, mt5Api, marketApi } from "../api/client.js";
 import { useI18n } from "../i18n/index.jsx";
@@ -33,18 +35,15 @@ import { pushSupported, isIOS, isStandalone, enablePush, disablePush } from "../
 // kept in sync manually since frontend/backend are separate codebases here.
 // crypto universe moved to lib/symbols.js (shared with the Bitunix panel)
 
-// Crypto futures first: they are the product's focus and the default symbol.
+// Crypto futures only (2026-11). Spot and metals were removed from the symbol
+// list: the product is focused on perps and the metals candle feed was never
+// reliable enough. The array keeps its historical name ("METALS") because the
+// whole page refers to the selected instrument as `metal`.
 const METALS = [
-  // crypto futures / perpetual (Bitunix execution venue) — the default group
+  // crypto futures / perpetual (Bitunix execution venue)
   ...CRYPTO_BASE.map((b) => ({
     symbol: `${b}USDT:PERP`, tv: `BINANCE:${b}USDT.P`, label: `${b} futures`, group: "futures",
   })),
-  // crypto spot
-  ...CRYPTO_BASE.map((b) => ({
-    symbol: `${b}USDT`, tv: `BINANCE:${b}USDT`, label: `${b} spot`, group: "spot",
-  })),
-  { symbol: "XAUUSD", tv: "TVC:GOLD", label: "XAU/USD", group: "metals" },
-  { symbol: "XAGUSD", tv: "TVC:SILVER", label: "XAG/USD", group: "metals" },
 ];
 const VALIDATED_TFS = ["5m", "15m", "1h"];
 
@@ -222,7 +221,7 @@ export default function Scalp() {
   const [balanceSource, setBalanceSource] = useState("manual");
   const [bxMode, setBxMode] = useState(() => localStorage.getItem("bx_mode") || "demo");
   // per-user market access (admin-managed): {metals, spot, futures}
-  const [marketAccess, setMarketAccess] = useState({ metals: true, spot: true, futures: true });
+  const [marketAccess, setMarketAccess] = useState({ metals: false, spot: false, futures: true });
   useEffect(() => {
     import("../api/client.js").then(({ prefsApi }) =>
       prefsApi.myAccess().then(setMarketAccess).catch(() => {}));
@@ -629,6 +628,8 @@ export default function Scalp() {
         </Collapse>
         <Collapse title={`📚 ${t("sc_market_context")}`}>
           <div className="grid gap-4 lg:grid-cols-2">
+            <FlowPanel symbol={metal.symbol} timeframe={tf[0]} />
+            <OldLevelsPanel symbol={metal.symbol} />
             {metal.group !== "metals" && <OrderBook symbol={metal.symbol} lastPrice={price} />}
             <EconomicNewsPanel symbol={metal.symbol} />
           </div>
@@ -903,7 +904,7 @@ function SymbolPicker({ current, onPick, access = {} }) {
                 className="w-full bg-ink-900 border border-ink-500 rounded-lg px-3 py-2 text-sm text-mist-100 outline-none focus:border-gold/50"
               />
             </div>
-            <div className="flex items-center gap-1 px-2 pt-2">
+            <div className={`items-center gap-1 px-2 pt-2 ${groups.length > 1 ? "flex" : "hidden"}`}>
               {groups.map(([g, label]) => (
                 <button key={g} onClick={() => setGroup(g)}
                   className={`text-xs px-2.5 py-1 rounded-md ${group === g ? "bg-ink-600 text-mist-100" : "text-mist-500 hover:text-mist-300"}`}>

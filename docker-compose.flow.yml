@@ -1,0 +1,34 @@
+# Futures flow recorder: order book snapshots, taker buy/sell volume, open interest,
+# funding and liquidations for the configured perps (see backend/apps/market/
+# management/commands/record_flow.py). Order book and liquidations cannot be
+# downloaded later, so this should run continuously.
+#
+#   docker compose -f docker-compose.flow.yml up -d            # start (uses the backend image)
+#   docker logs -f smartpips-flow-recorder
+#   docker compose -f docker-compose.flow.yml run --rm flow-recorder python manage.py check_flow
+#   docker compose -f docker-compose.flow.yml run --rm flow-recorder python manage.py check_flow --recorded
+#   docker compose -f docker-compose.flow.yml run --rm flow-recorder python manage.py backfill_flow --days 730
+#
+# Disk: roughly 5-10 MB per symbol per day with the defaults (100 levels every 10 s).
+services:
+  flow-recorder:
+    image: smartpips-backend
+    container_name: smartpips-flow-recorder
+    restart: unless-stopped
+    env_file:
+      - path: ./backend/.env
+        format: raw
+    environment:
+      POSTGRES_HOST: smartpips-postgres
+      POSTGRES_PORT: "5432"
+      FLOW_DATA_DIR: /data/flow
+    volumes:
+      - ./flow-data:/data/flow
+    networks:
+      - smartpips_network
+    command: ["python", "manage.py", "record_flow"]
+    stop_grace_period: 30s
+
+networks:
+  smartpips_network:
+    external: true

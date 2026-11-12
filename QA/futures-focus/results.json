@@ -1,0 +1,137 @@
+{
+ "note": "Synthetic fixtures; not live market data.",
+ "passed": 26,
+ "failed": 0,
+ "results": [
+  {
+   "name": "1440 /app redirects to scalp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "1440 /app/chat redirects to scalp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "1440 nav has no dashboard / assistant",
+   "ok": true,
+   "detail": "اسکالپ | بیت‌یونیکس | معاملات | استراتژی‌ها | هشدارها | منابع | مدل‌های هوش مصنوعی | اسکالپ | بیت‌یونیکس | معاملات | هشدارها"
+  },
+  {
+   "name": "1440 nav keeps scalp + journal",
+   "ok": true,
+   "detail": "اسکالپ | بیت‌یونیکس | معاملات | استراتژی‌ها | هشدارها | منابع | مدل‌های هوش مصنوعی | اسکالپ | بیت‌یونیکس | معاملات | هشدارها"
+  },
+  {
+   "name": "1440 stale metal symbol fell back to a perp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "1440 picker has no spot / metals",
+   "ok": true,
+   "detail": "BTCUSDT\nPERP\nETHUSDT\nPERP\nBNBUSDT\nPERP\nSOLUSDT\nPERP\nXRPUSDT\nPERP\nADAUSDT\nPERP\nDO"
+  },
+  {
+   "name": "1440 old-level toggle is on and counts 6",
+   "ok": true,
+   "detail": "سطوح قدیمی · 6"
+  },
+  {
+   "name": "1440 toggle switches off",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "1440 flow panel shows delta, funding, book and the partial-data note",
+   "ok": true,
+   "detail": "جریان سفارش واقعی (فیوچرز)\n\nدلتای خریدار/فروشندهٔ مهاجم · کندل‌های بستهٔ 15m\n\n۱ کندل آخر\n\n+11.6% · +95.2 BTC\n\nقیمت +0.12"
+  },
+  {
+   "name": "1440 levels panel lists PWH / ML, the taken PWL and the evidence note",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "1440 news panel shows the post-release cooldown",
+   "ok": true,
+   "detail": "رویداد اقتصادی بعدی\n\nBTCUSDT:PERP · تقویم اقتصاد کلان دلار\n\nCPI m/m\n\n۶ دقیقه از انتشار گذشته\n\n۲۲ آبا"
+  },
+  {
+   "name": "1440 no horizontal overflow",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "name": "390 /app redirects to scalp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "390 /app/chat redirects to scalp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "390 nav has no dashboard / assistant",
+   "ok": true,
+   "detail": "اسکالپ | بیت‌یونیکس | معاملات | استراتژی‌ها | هشدارها | منابع | مدل‌های هوش مصنوعی | اسکالپ | بیت‌یونیکس | معاملات | استراتژی‌ها | هشدارها | منابع | مدل‌های هوش مصنوعی | اسکالپ | بیت‌یونیکس | معاملات | هشدارها"
+  },
+  {
+   "name": "390 nav keeps scalp + journal",
+   "ok": true,
+   "detail": "اسکالپ | بیت‌یونیکس | معاملات | استراتژی‌ها | هشدارها | منابع | مدل‌های هوش مصنوعی | اسکالپ | بیت‌یونیکس | معاملات | استراتژی‌ها | هشدارها | منابع | مدل‌های هوش مصنوعی | اسکالپ | بیت‌یونیکس | معاملات | هشدارها"
+  },
+  {
+   "name": "390 stale metal symbol fell back to a perp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "390 picker has no spot / metals",
+   "ok": true,
+   "detail": "BTCUSDT\nPERP\nETHUSDT\nPERP\nBNBUSDT\nPERP\nSOLUSDT\nPERP\nXRPUSDT\nPERP\nADAUSDT\nPERP\nDO"
+  },
+  {
+   "name": "390 old-level toggle is on and counts 6",
+   "ok": true,
+   "detail": "سطوح قدیمی · 6"
+  },
+  {
+   "name": "390 toggle switches off",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "390 flow panel shows delta, funding, book and the partial-data note",
+   "ok": true,
+   "detail": "جریان سفارش واقعی (فیوچرز)\n\nدلتای خریدار/فروشندهٔ مهاجم · کندل‌های بستهٔ 15m\n\n۱ کندل آخر\n\n+11.6% · +95.2 BTC\n\nقیمت +0.12"
+  },
+  {
+   "name": "390 levels panel lists PWH / ML, the taken PWL and the evidence note",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "390 news panel shows the post-release cooldown",
+   "ok": true,
+   "detail": "رویداد اقتصادی بعدی\n\nBTCUSDT:PERP · تقویم اقتصاد کلان دلار\n\nCPI m/m\n\n۶ دقیقه از انتشار گذشته\n\n۲۲ آبا"
+  },
+  {
+   "name": "390 no horizontal overflow",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "name": "no page JavaScript errors",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "levels and flow endpoints were called",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

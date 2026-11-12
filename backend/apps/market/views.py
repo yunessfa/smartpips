@@ -90,3 +90,30 @@ def chart_candles(request):
     candles = fetch_candles(symbol, timeframe, limit=300) or []
     return Response({"symbol": symbol, "timeframe": timeframe, "candles": candles,
                      "source": LAST_SOURCE.get(f"{symbol}:{timeframe}", "market adapter")})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def futures_flow_view(request):
+    """Real order-flow context for a crypto perp: taker delta, open interest, funding, book.
+
+    Reference venue is Binance USD-M (see apps.market.futures_flow). Display only -
+    nothing here is read by the decision engine. Cached for 20 seconds per symbol and
+    timeframe so an open Scalp page cannot hammer the exchange.
+    """
+    from django.core.cache import cache
+    from . import futures_flow as ff
+    symbol = (request.query_params.get("symbol") or "BTCUSDT").upper()
+    timeframe = request.query_params.get("timeframe") or "5m"
+    if ff.base_symbol(symbol) not in ALLOWED_CRYPTO:
+        return Response({"detail": "Unsupported symbol."}, status=400)
+    if timeframe not in ("1m", "5m", "15m", "1h", "4h"):
+        return Response({"detail": "Unsupported timeframe."}, status=400)
+    key = f"flow:{ff.base_symbol(symbol)}:{timeframe}"
+    hit = cache.get(key)
+    if hit:
+        return Response(hit)
+    data = ff.snapshot(symbol, timeframe)
+    if data["status"] != "unavailable":
+        cache.set(key, data, 20)
+    return Response(data)

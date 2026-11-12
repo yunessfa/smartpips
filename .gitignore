@@ -39,3 +39,10 @@ qa/leverage-ui/artifacts/
 
 backend/logs/
 frontend/node_modules
+
+# Recorded futures flow data (docker-compose.flow.yml) - large, never committed
+flow-data/
+backend/flow-data/
+QA/futures-focus/artifacts/
+QA/old-levels-research/data/
+QA/flow-study/data/

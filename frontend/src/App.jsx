@@ -3,8 +3,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext.jsx";
 import Layout from "./components/Layout.jsx";
 import Login from "./pages/Login.jsx";
-const Dashboard = lazy(() => import("./pages/Dashboard.jsx"));
-const Chat = lazy(() => import("./pages/Chat.jsx"));
 const Sources = lazy(() => import("./pages/Sources.jsx"));
 const AISettings = lazy(() => import("./pages/AISettings.jsx"));
 const Trades = lazy(() => import("./pages/Trades.jsx"));
@@ -109,8 +107,10 @@ export default function App() {
             <Layout>
               <Suspense fallback={<div role="status" className="flex-1 min-h-0 p-6 text-mist-500" data-page-loading>در حال بارگذاری صفحه…</div>}>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/chat" element={<Chat />} />
+                {/* Futures-only focus (2026-11): the dashboard and the assistant
+                    chat were removed; the Scalp page is the panel's home. */}
+                <Route path="/" element={<Navigate to="/app/scalp" replace />} />
+                <Route path="/chat" element={<Navigate to="/app/scalp" replace />} />
                 <Route path="/trades" element={<Trades />} />
                 <Route path="/scalp" element={<Scalp />} />
                 <Route path="/bitunix" element={<Bitunix />} />
@@ -120,7 +120,7 @@ export default function App() {
                 <Route path="/ai" element={<AISettings />} />
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/strategies" element={<Strategies />} />
-                <Route path="*" element={<Navigate to="/app" replace />} />
+                <Route path="*" element={<Navigate to="/app/scalp" replace />} />
               </Routes>
               </Suspense>
             </Layout>

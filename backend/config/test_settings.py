@@ -15,3 +15,6 @@ REST_FRAMEWORK = {**REST_FRAMEWORK, "DEFAULT_THROTTLE_RATES": {**REST_FRAMEWORK[
 
 # Existing legacy fixtures explicitly exercise old sizing; new tests enable v1.
 DEMO_RISK_V1_ENABLED = False
+
+# Legacy fixtures exercise metals / spot paths; futures-only tests switch it on explicitly.
+FUTURES_ONLY = False

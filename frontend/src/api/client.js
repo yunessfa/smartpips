@@ -142,6 +142,8 @@ export const marketApi = {
   updateAsset: (id, data) => api.patch(`/market/assets/${id}/`, data),
   deleteAsset: (id) => api.del(`/market/assets/${id}/`),
   metal: (symbol) => api.get(`/market/metal/?symbol=${encodeURIComponent(symbol)}`),
+  // real futures order flow (taker delta, OI, funding, book) — display only
+  flow: (symbol, timeframe = "5m") => api.get(`/market/flow/?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`),
 };
 
 export const alertsApi = {
@@ -293,18 +295,6 @@ export const aiApi = {
   test: (id) => api.post(`/ai/providers/${id}/test/`, {}),
 };
 
-export const chatApi = {
-  conversations: () => api.get("/chat/conversations/"),
-  conversation: (id) => api.get(`/chat/conversations/${id}/`),
-  remove: (id) => api.del(`/chat/conversations/${id}/`),
-  send: (message, conversationId, livePrices) =>
-    api.post("/chat/send/", {
-      message,
-      conversation_id: conversationId,
-      live_prices: livePrices || {},
-    }),
-};
-
 function strategyChanged(data) {
   localStorage.setItem("smartpips-strategy-changed", String(Date.now()));
   window.dispatchEvent(new Event("smartpips-strategy-changed"));
@@ -329,6 +319,8 @@ export const strategyApi = {
   // ---- configurable strategies (presets + user-built) ----
   // These sit on top of the existing engine; the engine endpoints above are
   // untouched.
+  // untaken old highs/lows (day, week, month, swings) — chart context only
+  levels: (symbol) => api.get(`/strategy/levels/?symbol=${encodeURIComponent(symbol)}`),
   vocabulary: () => api.get("/strategy/vocabulary/"),
   strategies: (includeArchived) =>
     api.get(`/strategy/strategies/${includeArchived ? "?include_archived=1" : ""}`),

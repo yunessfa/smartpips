@@ -35,6 +35,12 @@ def chat(request):
 
     Body: { "conversation_id": <int|null>, "message": "<text>" }
     """
+    from django.conf import settings as _settings
+    if getattr(_settings, "FUTURES_ONLY", False):
+        # The assistant chat was removed with the futures-only focus (2026-11). It was also
+        # the one place an unverified mock quote could reach an AI prompt (audit E2).
+        return Response({"error": "The assistant chat has been removed.", "code": "chat_removed"},
+                        status=status.HTTP_410_GONE)
     user_text = (request.data.get("message") or "").strip()
     if not user_text:
         return Response(
@@ -173,6 +179,11 @@ def scalp_signal(request):
     _allowed = {"XAUUSD", "XAGUSD"} | SUPPORTED_CRYPTO
     if symbol.replace(":PERP", "") not in _allowed:
         return Response({"error": "Unsupported symbol."},
+                        status=status.HTTP_400_BAD_REQUEST)
+    from django.conf import settings as _settings
+    if getattr(_settings, "FUTURES_ONLY", False) and not (
+            symbol.endswith(":PERP") and symbol.replace(":PERP", "") in SUPPORTED_CRYPTO):
+        return Response({"error": "Only crypto futures are enabled.", "code": "futures_only"},
                         status=status.HTTP_400_BAD_REQUEST)
 
     price = request.data.get("price")

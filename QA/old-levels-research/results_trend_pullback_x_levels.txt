@@ -1,0 +1,153 @@
+
+=== 1h trend-pullback [TR] target=3.0R
+ALL                                  n=  439 win= 37.8% expR=+0.352 t=+3.9 PF=1.52
+room: none ahead (new extreme)       n=   20 (too few)
+room < 1R                            n=    0 (too few)
+room 1R..3.0R (level before TP)      n=  283 win= 37.1% expR=+0.315 t=+2.9 PF=1.47
+room >= 3.0R (clear path)            n=  136 win= 36.8% expR=+0.329 t=+2.0 PF=1.47
+MAJOR room: none ahead               n=   27 (too few)
+MAJOR room < 3.0R                    n=  101 win= 38.6% expR=+0.373 t=+2.0 PF=1.56
+MAJOR room >= 3.0R                   n=  311 win= 37.0% expR=+0.320 t=+3.0 PF=1.47
+entry within 0.3 ATR of a level      n=  307 win= 38.4% expR=+0.376 t=+3.5 PF=1.56
+entry 0.3-1 ATR from a level         n=   94 win= 33.0% expR=+0.191 t=+1.0 PF=1.27
+entry > 1 ATR from any level         n=   38 win= 44.7% expR=+0.553 t=+1.8 PF=1.94
+opposite liquidity swept (48 bars)   n=  172 win= 33.1% expR=+0.183 t=+1.3 PF=1.25
+no opposite sweep                    n=  267 win= 40.8% expR=+0.460 t=+4.0 PF=1.72
+same-side level broken (48 bars)     n=  427 win= 38.6% expR=+0.383 t=+4.2 PF=1.58
+no same-side break                   n=   12 (too few)
+
+=== 1h trend-pullback [VA] target=3.0R
+ALL                                  n=  212 win= 34.9% expR=+0.138 t=+1.1 PF=1.19
+room: none ahead (new extreme)       n=   10 (too few)
+room < 1R                            n=    0 (too few)
+room 1R..3.0R (level before TP)      n=  122 win= 37.7% expR=+0.254 t=+1.5 PF=1.36
+room >= 3.0R (clear path)            n=   80 win= 27.5% expR=-0.162 t=-0.9 PF=0.80
+MAJOR room: none ahead               n=   15 (too few)
+MAJOR room < 3.0R                    n=   41 win= 43.9% expR=+0.496 t=+1.7 PF=1.79
+MAJOR room >= 3.0R                   n=  156 win= 30.8% expR=-0.023 t=-0.2 PF=0.97
+entry within 0.3 ATR of a level      n=  139 win= 29.5% expR=-0.060 t=-0.4 PF=0.93
+entry 0.3-1 ATR from a level         n=   54 win= 40.7% expR=+0.347 t=+1.4 PF=1.52
+entry > 1 ATR from any level         n=   19 (too few)
+opposite liquidity swept (48 bars)   n=  101 win= 32.7% expR=+0.080 t=+0.4 PF=1.10
+no opposite sweep                    n=  111 win= 36.9% expR=+0.192 t=+1.1 PF=1.27
+same-side level broken (48 bars)     n=  204 win= 35.3% expR=+0.161 t=+1.3 PF=1.22
+no same-side break                   n=    8 (too few)
+
+=== 1h trend-pullback [HO] target=3.0R
+ALL                                  n=  196 win= 36.2% expR=+0.266 t=+2.0 PF=1.37
+room: none ahead (new extreme)       n=    5 (too few)
+room < 1R                            n=    0 (too few)
+room 1R..3.0R (level before TP)      n=  131 win= 32.1% expR=+0.068 t=+0.4 PF=1.09
+room >= 3.0R (clear path)            n=   60 win= 45.0% expR=+0.680 t=+2.7 PF=2.17
+MAJOR room: none ahead               n=    9 (too few)
+MAJOR room < 3.0R                    n=   55 win= 32.7% expR=+0.055 t=+0.2 PF=1.07
+MAJOR room >= 3.0R                   n=  132 win= 37.1% expR=+0.329 t=+2.0 PF=1.47
+entry within 0.3 ATR of a level      n=  137 win= 34.3% expR=+0.210 t=+1.3 PF=1.29
+entry 0.3-1 ATR from a level         n=   47 win= 36.2% expR=+0.186 t=+0.7 PF=1.26
+entry > 1 ATR from any level         n=   12 (too few)
+opposite liquidity swept (48 bars)   n=   78 win= 25.6% expR=-0.110 t=-0.6 PF=0.87
+no opposite sweep                    n=  118 win= 43.2% expR=+0.515 t=+2.9 PF=1.81
+same-side level broken (48 bars)     n=  187 win= 35.8% expR=+0.249 t=+1.8 PF=1.35
+no same-side break                   n=    9 (too few)
+
+=== 15m trend-pullback [TR] target=2.5R
+ALL                                  n= 1257 win= 38.6% expR=+0.163 t=+3.5 PF=1.23
+room: none ahead (new extreme)       n=   57 win= 42.1% expR=+0.347 t=+1.5 PF=1.54
+room < 1R                            n=    0 (too few)
+room 1R..2.5R (level before TP)      n=  244 win= 40.6% expR=+0.253 t=+2.3 PF=1.38
+room >= 2.5R (clear path)            n=  956 win= 37.9% expR=+0.129 t=+2.4 PF=1.18
+MAJOR room: none ahead               n=   84 win= 40.5% expR=+0.291 t=+1.6 PF=1.44
+MAJOR room < 2.5R                    n=   50 win= 50.0% expR=+0.572 t=+2.3 PF=2.00
+MAJOR room >= 2.5R                   n= 1123 win= 37.9% expR=+0.136 t=+2.7 PF=1.19
+entry within 0.3 ATR of a level      n=  573 win= 37.5% expR=+0.116 t=+1.7 PF=1.16
+entry 0.3-1 ATR from a level         n=  394 win= 36.5% expR=+0.090 t=+1.1 PF=1.12
+entry > 1 ATR from any level         n=  290 win= 43.4% expR=+0.357 t=+3.5 PF=1.56
+opposite liquidity swept (48 bars)   n=   54 win= 37.0% expR=+0.101 t=+0.4 PF=1.14
+no opposite sweep                    n= 1203 win= 38.7% expR=+0.166 t=+3.5 PF=1.24
+same-side level broken (48 bars)     n=  754 win= 39.0% expR=+0.175 t=+2.9 PF=1.25
+no same-side break                   n=  503 win= 38.0% expR=+0.145 t=+2.0 PF=1.20
+
+=== 15m trend-pullback [VA] target=2.5R
+ALL                                  n=  421 win= 38.0% expR=+0.118 t=+1.5 PF=1.17
+room: none ahead (new extreme)       n=   27 (too few)
+room < 1R                            n=    0 (too few)
+room 1R..2.5R (level before TP)      n=   59 win= 32.2% expR=-0.094 t=-0.5 PF=0.88
+room >= 2.5R (clear path)            n=  335 win= 38.8% expR=+0.150 t=+1.7 PF=1.22
+MAJOR room: none ahead               n=   39 win= 38.5% expR=+0.137 t=+0.5 PF=1.21
+MAJOR room < 2.5R                    n=   13 (too few)
+MAJOR room >= 2.5R                   n=  369 win= 38.2% expR=+0.119 t=+1.4 PF=1.17
+entry within 0.3 ATR of a level      n=  211 win= 36.5% expR=+0.073 t=+0.7 PF=1.10
+entry 0.3-1 ATR from a level         n=  103 win= 39.8% expR=+0.166 t=+1.0 PF=1.25
+entry > 1 ATR from any level         n=  107 win= 39.3% expR=+0.161 t=+1.0 PF=1.23
+opposite liquidity swept (48 bars)   n=   14 (too few)
+no opposite sweep                    n=  407 win= 37.8% expR=+0.118 t=+1.5 PF=1.17
+same-side level broken (48 bars)     n=  275 win= 38.2% expR=+0.115 t=+1.2 PF=1.16
+no same-side break                   n=  146 win= 37.7% expR=+0.123 t=+0.9 PF=1.17
+
+=== 15m trend-pullback [HO] target=2.5R
+ALL                                  n=  373 win= 39.4% expR=+0.153 t=+1.8 PF=1.22
+room: none ahead (new extreme)       n=    9 (too few)
+room < 1R                            n=    0 (too few)
+room 1R..2.5R (level before TP)      n=   89 win= 28.1% expR=-0.285 t=-1.8 PF=0.66
+room >= 2.5R (clear path)            n=  275 win= 44.0% expR=+0.329 t=+3.2 PF=1.50
+MAJOR room: none ahead               n=   13 (too few)
+MAJOR room < 2.5R                    n=   35 win= 22.9% expR=-0.487 t=-2.1 PF=0.46
+MAJOR room >= 2.5R                   n=  325 win= 41.8% expR=+0.246 t=+2.6 PF=1.36
+entry within 0.3 ATR of a level      n=  179 win= 39.1% expR=+0.132 t=+1.1 PF=1.18
+entry 0.3-1 ATR from a level         n=  110 win= 43.6% expR=+0.293 t=+1.8 PF=1.45
+entry > 1 ATR from any level         n=   84 win= 34.5% expR=+0.013 t=+0.1 PF=1.02
+opposite liquidity swept (48 bars)   n=   18 (too few)
+no opposite sweep                    n=  355 win= 39.2% expR=+0.148 t=+1.7 PF=1.21
+same-side level broken (48 bars)     n=  258 win= 39.5% expR=+0.167 t=+1.6 PF=1.24
+no same-side break                   n=  115 win= 39.1% expR=+0.122 t=+0.8 PF=1.17
+
+=== 5m trend-pullback [TR] target=2.5R
+ALL                                  n= 1622 win= 40.7% expR=+0.178 t=+4.3 PF=1.26
+room: none ahead (new extreme)       n=  107 win= 41.1% expR=+0.228 t=+1.4 PF=1.33
+room < 1R                            n=    0 (too few)
+room 1R..2.5R (level before TP)      n=  139 win= 42.4% expR=+0.260 t=+1.8 PF=1.39
+room >= 2.5R (clear path)            n= 1376 win= 40.5% expR=+0.166 t=+3.7 PF=1.24
+MAJOR room: none ahead               n=  157 win= 41.4% expR=+0.253 t=+1.9 PF=1.37
+MAJOR room < 2.5R                    n=   34 win= 50.0% expR=+0.417 t=+1.4 PF=1.70
+MAJOR room >= 2.5R                   n= 1431 win= 40.4% expR=+0.164 t=+3.8 PF=1.24
+entry within 0.3 ATR of a level      n=  492 win= 38.0% expR=+0.095 t=+1.3 PF=1.13
+entry 0.3-1 ATR from a level         n=  485 win= 40.4% expR=+0.159 t=+2.1 PF=1.23
+entry > 1 ATR from any level         n=  645 win= 42.9% expR=+0.256 t=+3.9 PF=1.39
+opposite liquidity swept (48 bars)   n=    8 (too few)
+no opposite sweep                    n= 1614 win= 40.5% expR=+0.177 t=+4.3 PF=1.26
+same-side level broken (48 bars)     n=  667 win= 43.8% expR=+0.243 t=+3.9 PF=1.38
+no same-side break                   n=  955 win= 38.5% expR=+0.133 t=+2.5 PF=1.18
+
+=== 5m trend-pullback [VA] target=2.5R
+ALL                                  n=  314 win= 40.1% expR=+0.097 t=+1.1 PF=1.14
+room: none ahead (new extreme)       n=   31 win= 38.7% expR=+0.046 t=+0.2 PF=1.06
+room < 1R                            n=    0 (too few)
+room 1R..2.5R (level before TP)      n=   19 (too few)
+room >= 2.5R (clear path)            n=  264 win= 40.9% expR=+0.125 t=+1.3 PF=1.18
+MAJOR room: none ahead               n=   48 win= 33.3% expR=-0.067 t=-0.3 PF=0.91
+MAJOR room < 2.5R                    n=    5 (too few)
+MAJOR room >= 2.5R                   n=  261 win= 42.1% expR=+0.152 t=+1.5 PF=1.22
+entry within 0.3 ATR of a level      n=   95 win= 46.3% expR=+0.298 t=+1.7 PF=1.47
+entry 0.3-1 ATR from a level         n=   78 win= 33.3% expR=-0.173 t=-1.0 PF=0.78
+entry > 1 ATR from any level         n=  141 win= 39.7% expR=+0.110 t=+0.8 PF=1.16
+opposite liquidity swept (48 bars)   n=    1 (too few)
+no opposite sweep                    n=  313 win= 39.9% expR=+0.090 t=+1.0 PF=1.13
+same-side level broken (48 bars)     n=  156 win= 42.3% expR=+0.165 t=+1.3 PF=1.25
+no same-side break                   n=  158 win= 38.0% expR=+0.030 t=+0.2 PF=1.04
+
+=== 5m trend-pullback [HO] target=2.5R
+ALL                                  n=  260 win= 44.2% expR=+0.281 t=+2.7 PF=1.43
+room: none ahead (new extreme)       n=    5 (too few)
+room < 1R                            n=    0 (too few)
+room 1R..2.5R (level before TP)      n=   26 (too few)
+room >= 2.5R (clear path)            n=  229 win= 43.7% expR=+0.258 t=+2.3 PF=1.39
+MAJOR room: none ahead               n=    8 (too few)
+MAJOR room < 2.5R                    n=   14 (too few)
+MAJOR room >= 2.5R                   n=  238 win= 43.7% expR=+0.263 t=+2.4 PF=1.40
+entry within 0.3 ATR of a level      n=   72 win= 41.7% expR=+0.180 t=+0.9 PF=1.27
+entry 0.3-1 ATR from a level         n=   81 win= 43.2% expR=+0.206 t=+1.1 PF=1.31
+entry > 1 ATR from any level         n=  107 win= 46.7% expR=+0.405 t=+2.5 PF=1.66
+opposite liquidity swept (48 bars)   n=    2 (too few)
+no opposite sweep                    n=  258 win= 44.2% expR=+0.278 t=+2.7 PF=1.43
+same-side level broken (48 bars)     n=  138 win= 39.1% expR=+0.089 t=+0.6 PF=1.13
+no same-side break                   n=  122 win= 50.0% expR=+0.497 t=+3.2 PF=1.86

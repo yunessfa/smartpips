@@ -16,6 +16,10 @@ class MarketAccess(models.Model):
     allow_futures = models.BooleanField(default=True)
 
     def as_dict(self):
+        if getattr(settings, "FUTURES_ONLY", False):
+            # product-wide switch: the stored per-user flags are kept, not applied
+            return {"metals": False, "spot": False, "futures": self.allow_futures,
+                    "futures_only": True}
         return {"metals": self.allow_metals, "spot": self.allow_spot,
                 "futures": self.allow_futures}
 
