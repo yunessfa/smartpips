@@ -286,7 +286,7 @@ def _mt5_candles(symbol, timeframe, max_age=None):
         return None
 
 
-_BINANCE_INTERVAL = {"1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h"}
+_BINANCE_INTERVAL = {"1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d"}
 
 
 
@@ -651,3 +651,36 @@ def fetch_history(symbol, timeframe="5m", bars=5000, budget_s=HISTORY_TIME_BUDGE
     if rows:
         cache.set(ckey, {"rows": rows, "info": info}, HISTORY_CACHE_TTL_S)
     return rows, info
+
+
+def fetch_daily_candles(symbol, limit=1000):
+    """Daily bars for old-level context (crypto perps only). Returns (bars, source).
+
+    Not part of fetch_candles(): no decision reads daily bars, and the engine's
+    freshness / TTL tables are keyed to the intraday timeframes. Bitunix first
+    (the venue whose chart the levels are drawn on), Binance futures as fallback.
+    Cached for 30 minutes - a daily level cannot change faster than that, and the
+    caller checks "taken since" against fresher intraday bars.
+    """
+    symbol = symbol.upper()
+    if not symbol.endswith(":PERP") or symbol.replace(":PERP", "") not in _CRYPTO:
+        return [], None
+    key = f"daily:{symbol}:{limit}"
+    try:
+        from django.core.cache import cache
+        hit = cache.get(key)
+    except Exception:
+        cache, hit = None, None
+    if hit:
+        return hit["bars"], hit["source"]
+    bars, source = _bitunix_candles(symbol, "1d", limit), "bitunix"
+    if not bars or len(bars) < 30:
+        bars, source = _binance_candles(symbol, "1d", limit), "binance_futures"
+    if not bars:
+        return [], None
+    if cache is not None:
+        try:
+            cache.set(key, {"bars": bars, "source": source}, 1800)
+        except Exception:
+            pass
+    return bars, source

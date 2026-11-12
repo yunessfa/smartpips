@@ -161,7 +161,7 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
     # 3) NEWS GUARD
     try:
         from apps.market.calendar_guard import high_impact_soon
-        blocked, info = high_impact_soon(within_min=30)
+        blocked, info = high_impact_soon()
         if blocked and decision.get("signal") in ("buy", "sell"):
             decision["signal"] = "wait"
             decision["confidence"] = "low"

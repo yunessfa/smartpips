@@ -107,3 +107,38 @@ def market_overview(request):
                 cache.set(key, row, min(step, 300))
         rows.append({"symbol": symbol, "timeframe": timeframe, **row})
     return Response({"timeframe": timeframe, "results": rows})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def old_levels_view(request):
+    """Untaken old highs / lows (day, week, month, swings) around the current price.
+
+    Chart context only - see apps.strategy.old_levels for the evidence note. Crypto
+    perps only. Levels come from daily + 4h history; the last 200 5m bars are used to
+    drop anything taken since those slower series were cached.
+    """
+    from django.core.cache import cache
+    from apps.market.candles import fetch_candles, fetch_daily_candles
+    from apps.market.crypto_symbols import is_supported_crypto
+    from . import old_levels
+    symbol = (request.query_params.get("symbol") or "BTCUSDT:PERP").upper()
+    if not is_supported_crypto(symbol):
+        return Response({"error": "Unsupported symbol.", "code": "unsupported_symbol"}, status=400)
+    if not symbol.endswith(":PERP"):
+        symbol = f"{symbol}:PERP"
+    key = f"oldlevels:{symbol}"
+    hit = cache.get(key)
+    if hit:
+        return Response(hit)
+    daily, source = fetch_daily_candles(symbol, 1000)
+    if not daily:
+        return Response({"symbol": symbol, "levels": [], "previous": {}, "status": "unavailable",
+                         "code": "no_daily_history"})
+    h4 = fetch_candles(symbol, "4h", limit=500) or []
+    recent = fetch_candles(symbol, "5m", limit=200) or []
+    out = old_levels.summarize(daily, h4, recent=recent)
+    out.update(symbol=symbol, source=source, status="ok" if out["levels"] or out["previous"] else "empty",
+               role="context_only", evidence="QA/old-levels-research: no edge as an entry signal or filter")
+    cache.set(key, out, 60)
+    return Response(out)

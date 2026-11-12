@@ -1,7 +1,7 @@
 import { analysisTargetLevels, chartPriceFormat } from "../lib/takeProfitPlan.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createChart, CrosshairMode, LineStyle } from "lightweight-charts";
-import { bitunixApi, marketApi } from "../api/client.js";
+import { bitunixApi, marketApi, strategyApi } from "../api/client.js";
 import { useI18n } from "../i18n/index.jsx";
 import { fmtPrice } from "../lib/num.js";
 import { BITUNIX_SYMBOLS } from "../lib/symbols.js";
@@ -146,6 +146,7 @@ export function PositionChart({
   const seriesRef = useRef(null);
   const linesRef = useRef([]);
   const analysisLinesRef = useRef([]);
+  const oldLinesRef = useRef([]);
   const [source, setSource] = useState("");
   const [candleView, setCandleView] = useState(null);
 
@@ -393,6 +394,43 @@ export function PositionChart({
     }));
   }, [analysisLevels, chartEpoch, analysisMode]);
 
+  // Old levels (untaken highs/lows of past days, weeks, months and swings).
+  // Context only: the 2026-11 study found no edge in them as entries, so they
+  // are drawn as thin reference lines and never widen the price scale.
+  const [showOld, setShowOld] = useState(() => {
+    try { return localStorage.getItem("pc_old_levels") !== "0"; } catch { return true; }
+  });
+  const [oldLevels, setOldLevels] = useState([]);
+  const wantsOld = analysisMode && showOld && String(symbol || "").endsWith(":PERP");
+  useEffect(() => {
+    if (!wantsOld) { setOldLevels([]); return undefined; }
+    let stop = false;
+    async function pull() {
+      try {
+        const res = await strategyApi.levels(symbol);
+        if (!stop) setOldLevels(Array.isArray(res?.levels) ? res.levels : []);
+      } catch { if (!stop) setOldLevels([]); }   // context only: never block the chart
+    }
+    pull();
+    const id = setInterval(pull, 60000);
+    return () => { stop = true; clearInterval(id); };
+  }, [symbol, wantsOld]);
+  const oldSig = oldLevels.map((l) => `${l.label}:${l.price}`).join("|");
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    oldLinesRef.current.forEach((line) => { try { series.removePriceLine(line); } catch { /* gone */ } });
+    oldLinesRef.current = oldLevels
+      .filter((l) => Number.isFinite(Number(l.price)) && Number(l.price) > 0)
+      .map((l) => series.createPriceLine({
+        price: Number(l.price), title: l.label,
+        color: l.kind === "high" ? "rgba(233,115,102,0.75)" : "rgba(114,188,143,0.75)",
+        lineWidth: l.major ? 2 : 1, lineStyle: l.major ? LineStyle.Solid : LineStyle.Dotted,
+        axisLabelVisible: true,
+      }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oldSig, chartEpoch]);
+
   // ---------------------------------------------------------------- ui ----
   const lastClose = candles?.length ? candles[candles.length - 1].close : null;
   const livePrice = selected?.mark ?? markPrice ?? lastClose;
@@ -495,12 +533,21 @@ export function PositionChart({
             <bdi dir="ltr" className="tnum font-semibold text-mist-100">{fmtPrice(price)}</bdi>
           </span>
         ))}
+        {String(symbol || "").endsWith(":PERP") && (
+          <button type="button" aria-pressed={showOld} onClick={() => setShowOld((v) => {
+              try { localStorage.setItem("pc_old_levels", v ? "0" : "1"); } catch { /* ignore */ }
+              return !v;
+            })}
+            className={`${matchingAnalysis ? "ms-auto" : ""} rounded-md border px-2 py-1 ${showOld ? "border-gold/50 text-gold-soft" : "border-ink-500 text-mist-500 hover:text-mist-300"}`}>
+            {t("lvl_old")}{showOld && oldLevels.length ? ` · ${oldLevels.length}` : ""}
+          </button>
+        )}
         {matchingAnalysis && (
           <button type="button" onClick={() => setMoreLevels((v) => {
               try { localStorage.setItem("pc_more_levels", v ? "0" : "1"); } catch { /* ignore */ }
               return !v;
             })}
-            className={`ms-auto rounded-md border px-2 py-1 ${moreLevels ? "border-gold/50 text-gold-soft" : "border-ink-500 text-mist-500 hover:text-mist-300"}`}>
+            className={`rounded-md border px-2 py-1 ${moreLevels ? "border-gold/50 text-gold-soft" : "border-ink-500 text-mist-500 hover:text-mist-300"}`}>
             {moreLevels ? t("lvl_less") : t("lvl_more")}
           </button>
         )}

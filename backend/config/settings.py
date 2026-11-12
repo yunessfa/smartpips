@@ -278,3 +278,13 @@ CSRF_COOKIE_SECURE = REFRESH_COOKIE_SECURE
 
 # Research risk profile applies ONLY to demo Bitunix orders.
 DEMO_RISK_V1_ENABLED = os.getenv("DEMO_RISK_V1_ENABLED", "1").lower() in ("1", "true", "yes")
+
+# Product focus (2026-11): crypto futures only. Metals and spot are switched off
+# for every user regardless of their MarketAccess row, the scalp endpoint only
+# serves ':PERP' symbols and the alert monitor stops scanning gold / silver.
+# The code paths are still there: set FUTURES_ONLY=0 to bring them back.
+FUTURES_ONLY = os.getenv("FUTURES_ONLY", "1").lower() in ("1", "true", "yes")
+
+# Minutes around a high-impact USD release (CPI, FOMC, NFP, ...) with no new entries.
+NEWS_BLACKOUT_BEFORE_MIN = int(os.getenv("NEWS_BLACKOUT_BEFORE_MIN", "30"))
+NEWS_BLACKOUT_AFTER_MIN = int(os.getenv("NEWS_BLACKOUT_AFTER_MIN", "15"))

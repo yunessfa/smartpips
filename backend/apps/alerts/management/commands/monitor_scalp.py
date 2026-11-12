@@ -80,8 +80,10 @@ class Command(BaseCommand):
         if not vapid_configured():
             self.stdout.write("VAPID not configured — internal notifications remain enabled; no browser push.")
 
-        # 1) default gold/silver
-        pairs = list(WATCH)
+        # 1) default gold/silver - not under the futures-only product focus
+        from django.conf import settings
+        futures_only = getattr(settings, "FUTURES_ONLY", False)
+        pairs = [] if futures_only else list(WATCH)
 
         # 2) every active user-watchlisted symbol, across all watch timeframes
         try:
@@ -89,6 +91,8 @@ class Command(BaseCommand):
             symbols = (WatchItem.objects.filter(active=True)
                        .values_list("symbol", flat=True).distinct())
             for sym in symbols:
+                if futures_only and not str(sym).upper().endswith(":PERP"):
+                    continue          # old metal / spot watch items stay stored, just not scanned
                 for tf in WATCH_TFS:
                     if (sym, tf) not in pairs:
                         pairs.append((sym, tf))

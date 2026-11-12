@@ -16,3 +16,7 @@ ctrader-open-api==0.9.2
 service_identity>=24.1.0
 # keep pyOpenSSL compatible with cryptography to avoid GEN_EMAIL error
 pyOpenSSL==24.1.0
+
+
+# Liquidation stream for the futures flow recorder (manage.py record_flow)
+websocket-client==1.9.2
