@@ -83,6 +83,7 @@ export default function Layout({ children }) {
     // The panel moved under /app; the public marketing site now owns the root.
     // Futures-only focus: no dashboard, no assistant chat. Scalp is home.
     { to: "/app/scalp", label: t("nav_scalp"), icon: BoltIcon },
+    { to: "/app/radar", label: t("nav_radar"), icon: RadarIcon },
     { to: "/app/bitunix", label: t("nav_bitunix"), icon: CandleIcon },
     { to: "/app/trades", label: t("nav_trades"), icon: JournalIcon },
     { to: "/app/strategies", label: t("nav_strategies"), icon: TargetIcon },
@@ -96,7 +97,8 @@ export default function Layout({ children }) {
   // Mobile bottom bar shows four trading-critical destinations plus a "More"
   // sheet. Slicing the nav to five buttons used to hide whatever came after
   // it, so any page added later became unreachable on a phone.
-  const PRIMARY = [NAV[0], NAV[1], NAV[2], NAV[4]];   // scalp, exchange, journal, notifications
+  const PRIMARY = ["/app/scalp", "/app/radar", "/app/trades", "/app/notifications"]
+    .map((to) => NAV.find((item) => item.to === to));
   const REST = NAV.filter((item) => !PRIMARY.includes(item));
 
   const Sidebar = (
@@ -291,6 +293,7 @@ export function PageHeader({ title, subtitle, right }) {
   );
 }
 
+function RadarIcon() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 12l6.5-6.5"/><path d="M20.5 9.5A9 9 0 1 1 14.5 3.4"/><path d="M16 11a4.2 4.2 0 1 1-3-3"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>); }
 function MoreIcon() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>); }
 function BellIcon() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>); }
 function JournalIcon() { return (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h7"/></svg>); }

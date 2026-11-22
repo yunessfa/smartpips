@@ -94,6 +94,8 @@ class Command(BaseCommand):
                 if futures_only and not str(sym).upper().endswith(":PERP"):
                     continue          # old metal / spot watch items stay stored, just not scanned
                 for tf in WATCH_TFS:
+                    if tf == "1m" and getattr(settings, "ALERTS_VALIDATED_ONLY", True):
+                        continue  # the validated playbook does not trade 1m
                     if (sym, tf) not in pairs:
                         pairs.append((sym, tf))
         except Exception as exc:

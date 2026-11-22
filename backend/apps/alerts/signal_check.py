@@ -1,6 +1,8 @@
 """User-scoped alerts from the same guarded decision pipeline as the scalp API."""
 import hashlib
 import logging
+from datetime import timedelta
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from .push import broadcast, vapid_configured
@@ -15,6 +17,34 @@ def _limit_note(decision):
     minutes = plan.get('valid_for_minutes')
     source = 'trend pullback, ' if decision.get('signal_source') == 'playbook' else ''
     return (f"LIMIT ({source}valid ~{minutes} min) " if minutes else f"LIMIT ({source}pullback) ")
+
+
+def _alert_mode(user):
+    """'safe' follows the user's own playbook strategy; 'trend' is the playbook alone."""
+    if not getattr(settings, 'ALERTS_VALIDATED_ONLY', True):
+        return 'safe'
+    from apps.strategy.config_models import Strategy
+    strategy = Strategy.objects.filter(user=user, is_active=True, archived=False).first()
+    version = strategy.current_version() if strategy else None
+    return 'safe' if version and (version.risk or {}).get('signal_source') == 'playbook' else 'trend'
+
+
+def _same_setup_alerted(user, symbol, timeframe, signal, decision):
+    """A playbook limit stays valid for N bars: flicker inside that window is one setup."""
+    if decision.get('signal_source') != 'playbook':
+        return False
+    from apps.strategy.trend_pullback import LIMIT_VALID_BARS, TF_SECONDS
+    from .models import Notification
+    since = timezone.now() - timedelta(seconds=LIMIT_VALID_BARS * TF_SECONDS.get(timeframe, 300))
+    return Notification.objects.filter(
+        user=user, category='signal', symbol=symbol, created__gte=since,
+        meta__timeframe=timeframe, meta__signal=signal,
+        meta__strategy_version_id=decision.get('strategy_version_id')).exists()
+
+
+def _breakeven_note(decision):
+    be = (decision.get('exit_plan') or {}).get('breakeven')
+    return f" · at {be['trigger_price']} move SL to {be['stop_price']}" if be else ''
 
 
 def evaluate_and_alert(symbol, timeframe):
@@ -33,7 +63,8 @@ def evaluate_and_alert(symbol, timeframe):
     sent = 0
     for user in watchers(symbol):
         try:
-            decision = decide(symbol, timeframe=timeframe, user=user, mode='safe')
+            mode = _alert_mode(user)
+            decision = decide(symbol, timeframe=timeframe, user=user, mode=mode)
             signal = decision.get('signal', 'wait')
             score = int(decision.get('score') or 0)
             why = _wait_reason(decision) if signal not in ('buy', 'sell') else ''
@@ -51,7 +82,7 @@ def evaluate_and_alert(symbol, timeframe):
             if not eligible or blocked:
                 signal = 'wait'
             context = hashlib.sha256(
-                f"{decision.get('strategy_id')}:{decision.get('strategy_version_id')}:safe".encode()
+                f"{decision.get('strategy_id')}:{decision.get('strategy_version_id')}:{mode}".encode()
             ).hexdigest()
             note = None
             with transaction.atomic():
@@ -60,6 +91,8 @@ def evaluate_and_alert(symbol, timeframe):
                 state = UserSignalState.objects.select_for_update().get(pk=state.pk)
                 changed = signal in ('buy', 'sell') and (
                     signal != state.last_signal or context != state.context)
+                if changed and _same_setup_alerted(user, symbol, timeframe, signal, decision):
+                    changed = False
                 if changed:
                     word = signal.upper()
                     payload = {
@@ -67,14 +100,14 @@ def evaluate_and_alert(symbol, timeframe):
                         'body': (f"{word} setup (score {score}, R:R {decision.get('risk_reward')}). "
                                  f"{_limit_note(decision)}"
                                  f"Entry {decision.get('entry')} · SL {decision.get('stop_loss')} "
-                                 f"· TP {decision.get('take_profit')}"),
+                                 f"· TP {decision.get('take_profit')}{_breakeven_note(decision)}"),
                         'url': f'/app/scalp?symbol={symbol}&tf={timeframe}&quick=1',
                         'symbol': symbol, 'timeframe': timeframe, 'signal': signal,
                         'entry': decision.get('entry'), 'sl': decision.get('stop_loss'),
                         'tp': decision.get('take_profit'), 'score': score,
                         'strategy_id': decision.get('strategy_id'),
                         'strategy_version_id': decision.get('strategy_version_id'),
-                        'strategy_name': decision.get('strategy_name'), 'mode': 'safe',
+                        'strategy_name': decision.get('strategy_name'), 'mode': mode,
                         'generated_at': decision.get('generated_at'),
                     }
                     note = notify(user, title=payload['title'], body=payload['body'],

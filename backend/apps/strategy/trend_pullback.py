@@ -35,6 +35,11 @@ LIMIT_VALID_BARS = 12
 MAX_HOLD_BARS = 72
 TARGET_R = {"5m": 2.5, "15m": 2.5, "1h": 3.0}
 NEEDS_1H = {"5m": True, "15m": True, "1h": False}
+# Once a bar CLOSES this many R in profit the stop moves to entry + BREAKEVEN_LOCK_R.
+# 1h only: on 12 coins it kept expectancy and cut the portfolio drawdown by a quarter.
+# On 15m it did not help, and 5m was not tested, so those keep the plain exit.
+BREAKEVEN_R = {"1h": 1.0}
+BREAKEVEN_LOCK_R = 0.1
 MIN_BARS = 400             # EMA200 warm-up on the trading timeframe
 MIN_HTF_BARS = 250         # EMA200 warm-up on 4h / 1h
 LIVE_FETCH_BARS = 600      # what decide() requests so the EMAs are converged
@@ -77,10 +82,22 @@ RESEARCH = {
         "double_costs_holdout_expectancy_r": {"1h": 0.193, "15m": 0.047, "5m": 0.238},
         "parameter_neighbourhood_1h": "107 of 108 nearby parameter sets positive in train, validation and holdout",
     },
+    # Same rules, no re-tuning, on Binance USD-M 5m data 2021-01 .. 2026-10.
+    "multi_symbol": {
+        "symbols": ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK", "SUI", "BNB", "LTC", "AAVE"],
+        "periods": {"train": "2021-2023", "validation": "2024", "holdout": "2025-2026"},
+        "expectancy_r": {"1h": {"train": 0.303, "validation": 0.178, "holdout": 0.200},
+                         "15m": {"train": 0.224, "validation": 0.201, "holdout": 0.203},
+                         "5m": {"train": 0.173, "validation": 0.134, "holdout": 0.147}},
+        "win_rate_pct": {"1h": 35.2, "15m": 39.1, "5m": 38.8},
+        "with_1h_breakeven": {"win_rate_pct": 49.3, "expectancy_r": 0.249, "portfolio_max_drawdown_r": -48.6,
+                              "without_breakeven_max_drawdown_r": -64.7, "wins_below_0_3r_pct": 48},
+    },
     "caveats": [
         "5m/15m edge mostly disappears if your real costs are about double the assumed ones.",
         "Limit entries assume a fill on touch; requiring a 0.02% trade-through lowers expectancy 10-20%.",
-        "Only BTC was tested over multiple years; other symbols are untested.",
+        "Coins move together: 12 symbols had a -13R worst day, so size each trade for that.",
+        "The 12 coins are ones that survived to 2026, which flatters any multi-coin result.",
         "Past results do not guarantee future results.",
     ],
 }
@@ -252,7 +269,7 @@ def setup_at(i, ind, timeframe, h4_view, h1_view=None, symbol="BTCUSDT"):
         "direction": direction, "entry": entry, "stop": stop, "target": target,
         "stop_dist": stop_dist, "stop_pct": stop_pct, "target_r": target_r, "net_rr": net_rr,
         "atr": a, "close": close, "checks": checks, "wait_reasons": [],
-        "bar_time": t,
+        "bar_time": t, "breakeven_r": BREAKEVEN_R.get(timeframe),
     }
 
 
@@ -282,7 +299,7 @@ def apply(decision, symbol, timeframe, tf_candles, htf_candles):
                    est_round_trip_cost_pct=None, tp_source=None, grade=None)
     if base in ("XAUUSD", "XAGUSD"):
         decision.update(signal="wait", confidence="low", score=0, **cleared,
-                        reason="Trend pullback playbook is validated on crypto (BTC) only.",
+                        reason="Trend pullback playbook is validated on crypto only.",
                         wait_reasons=[{"code": "playbook_market", "message": "not validated on metals"}])
         return decision
     if not tf_candles:
@@ -303,6 +320,13 @@ def apply(decision, symbol, timeframe, tf_candles, htf_candles):
     rnd = lambda x: round(float(x), d)
     step_min = TF_SECONDS[timeframe] // 60
     tp_r = s["target_r"]
+    breakeven = None
+    if BREAKEVEN_R.get(timeframe):
+        trigger_r = BREAKEVEN_R[timeframe]
+        breakeven = {"trigger_r": trigger_r, "lock_r": BREAKEVEN_LOCK_R,
+                     "trigger_price": rnd(s["entry"] + s["direction"] * s["stop_dist"] * trigger_r),
+                     "stop_price": rnd(s["entry"] + s["direction"] * s["stop_dist"] * BREAKEVEN_LOCK_R),
+                     "note": "manual: after a bar closes past the trigger, move the stop to stop_price"}
     decision.update(
         signal=s["signal"], confidence="high", score=80, grade="A",
         entry=rnd(s["entry"]), stop_loss=rnd(s["stop"]), take_profit=rnd(s["target"]),
@@ -319,6 +343,7 @@ def apply(decision, symbol, timeframe, tf_candles, htf_candles):
                     "stretch_ema21_atr": s["checks"]["stretch_atr"]},
         exit_plan={"type": "fixed_target", "target_r": tp_r, "stop_atr": STOP_ATR,
                    "max_hold_bars": MAX_HOLD_BARS, "max_hold_minutes": MAX_HOLD_BARS * step_min,
+                   "breakeven": breakeven,
                    "note": "close at market if neither stop nor target is hit within the time limit"},
         reason=(f"Trend pullback ({timeframe}): 4h trend {'up' if s['direction'] > 0 else 'down'}, "
                 f"EMAs stacked, LIMIT at EMA21, stop {STOP_ATR} ATR ({s['stop_pct']:.2f}%), target {tp_r}R."),

@@ -288,3 +288,11 @@ FUTURES_ONLY = os.getenv("FUTURES_ONLY", "1").lower() in ("1", "true", "yes")
 # Minutes around a high-impact USD release (CPI, FOMC, NFP, ...) with no new entries.
 NEWS_BLACKOUT_BEFORE_MIN = int(os.getenv("NEWS_BLACKOUT_BEFORE_MIN", "30"))
 NEWS_BLACKOUT_AFTER_MIN = int(os.getenv("NEWS_BLACKOUT_AFTER_MIN", "15"))
+
+# Entry alerts come only from the validated playbook. The base score engine lost
+# money on the signals it really sent (2026-10/11), worst on 1m. 0 restores it.
+ALERTS_VALIDATED_ONLY = os.getenv("ALERTS_VALIDATED_ONLY", "1").lower() in ("1", "true", "yes")
+
+# Optional market-radar providers. Without a key the radar uses free sources.
+CMC_API_KEY = os.getenv("CMC_API_KEY", "")
+POLYGON_API_KEY = os.getenv("POLYGON_API_KEY", "")

@@ -274,8 +274,8 @@ PRESETS.append({
 PRESETS.append({
     "key": "trend_pullback", "name": "Trend Pullback (validated)",
     "description": ("4h trend + stacked EMAs; after a >1 ATR push, a LIMIT waits at EMA21; stop 1.5 ATR "
-                    "(min 0.4%), one target (3R on 1h, 2.5R on 5m/15m). Positive in all 8 years of "
-                    "BTC 2019-2026 after costs; 1h is the most robust."),
+                    "(min 0.4%), one target (3R on 1h, 2.5R on 5m/15m); on 1h the stop moves to breakeven at +1R. "
+                    "Positive after costs on BTC 2019-2026 and on 12 coins 2021-2026; 1h is the most robust."),
     "market": "crypto", "timeframes": ["1h", "15m", "5m"], "direction": "both",
     "min_confidence": 0, "weights": {}, "rules": [],
     "risk": {"risk_per_trade_pct": 0.5, "max_leverage": 5, "max_open_positions": 2,

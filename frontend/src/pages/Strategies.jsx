@@ -132,6 +132,56 @@ export default function Strategies() {
     });
   }
 
+  const renderPreset = (s) => (
+      <div key={s.id} className={`rounded-xl border p-3.5 ${isPlaybook(s)
+        ? "border-up/40 bg-up/[0.05]" : "border-ink-500 bg-ink-800/60"}`}>
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 truncate text-sm font-semibold text-mist-100">
+            {presetText(t, s, "name")}
+          </p>
+          <Badge tone={isPlaybook(s) ? "up" : "gold"}>
+            {isPlaybook(s) ? t("st_validated") : t("st_unvalidated")}
+          </Badge>
+        </div>
+        <p className="mt-1.5 text-xs leading-relaxed text-mist-500">
+          {presetText(t, s, "desc")}
+          {!isPlaybook(s) && <span className="mt-1 block text-[11px] text-gold-soft/80">{t("st_unvalidated_hint")}</span>}
+        </p>
+        <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] text-mist-500">
+          {isPlaybook(s) ? (
+            <span className="rounded border border-up/40 px-1.5 py-0.5 text-up">{t("st_source_playbook_short")}</span>
+          ) : (
+            <>
+              <span className="rounded border border-ink-500 px-1.5 py-0.5">
+                {t("st_min_conf")} {s.current?.min_confidence}%
+              </span>
+              <span className="rounded border border-ink-500 px-1.5 py-0.5">
+                {(s.current?.rules || []).length} {t("st_rules")}
+              </span>
+            </>
+          )}
+          <span className="rounded border border-ink-500 px-1.5 py-0.5">
+            {(s.timeframes || []).join(" · ")}
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            onClick={() => run(s.id, () => strategyApi.activateStrategy(s.id))}
+            disabled={busyId === s.id}
+          >
+            {t("st_use")}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => run(s.id, () => strategyApi.cloneStrategy(s.id))}
+            disabled={busyId === s.id}
+          >
+            {t("st_clone")}
+          </Button>
+        </div>
+      </div>
+  );
+
   return (
     <>
       <PageHeader title={t("st_title")} subtitle={t("st_sub")} />
@@ -208,56 +258,18 @@ export default function Strategies() {
         <Panel title={t("st_presets")}>
           <p className="mb-3 text-xs text-mist-500">{t("st_presets_hint")}</p>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {[...presets].sort((a, b) => (isPlaybook(b) ? 1 : 0) - (isPlaybook(a) ? 1 : 0)).map((s) => (
-              <div key={s.id} className={`rounded-xl border p-3.5 ${isPlaybook(s)
-                ? "border-up/40 bg-up/[0.05]" : "border-ink-500 bg-ink-800/60"}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-sm font-semibold text-mist-100">
-                    {presetText(t, s, "name")}
-                  </p>
-                  <Badge tone={isPlaybook(s) ? "up" : "gold"}>
-                    {isPlaybook(s) ? t("st_validated") : t("st_unvalidated")}
-                  </Badge>
-                </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-mist-500">
-                  {presetText(t, s, "desc")}
-                  {!isPlaybook(s) && <span className="mt-1 block text-[11px] text-gold-soft/80">{t("st_unvalidated_hint")}</span>}
-                </p>
-                <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] text-mist-500">
-                  {isPlaybook(s) ? (
-                    <span className="rounded border border-up/40 px-1.5 py-0.5 text-up">{t("st_source_playbook_short")}</span>
-                  ) : (
-                    <>
-                      <span className="rounded border border-ink-500 px-1.5 py-0.5">
-                        {t("st_min_conf")} {s.current?.min_confidence}%
-                      </span>
-                      <span className="rounded border border-ink-500 px-1.5 py-0.5">
-                        {(s.current?.rules || []).length} {t("st_rules")}
-                      </span>
-                    </>
-                  )}
-                  <span className="rounded border border-ink-500 px-1.5 py-0.5">
-                    {(s.timeframes || []).join(" · ")}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    onClick={() => run(s.id, () => strategyApi.activateStrategy(s.id))}
-                    disabled={busyId === s.id}
-                  >
-                    {t("st_use")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => run(s.id, () => strategyApi.cloneStrategy(s.id))}
-                    disabled={busyId === s.id}
-                  >
-                    {t("st_clone")}
-                  </Button>
-                </div>
-              </div>
-            ))}
+            {presets.filter(isPlaybook).map(renderPreset)}
           </div>
+          {presets.some((s) => !isPlaybook(s)) && (
+            <details className="mt-4 rounded-xl border border-ink-500 bg-ink-800/40">
+              <summary className="cursor-pointer select-none px-3.5 py-2.5 text-xs font-medium text-mist-300">
+                {t("st_more_presets")} ({presets.filter((s) => !isPlaybook(s)).length})
+              </summary>
+              <div className="grid grid-cols-1 gap-3 p-3 md:grid-cols-2 xl:grid-cols-3">
+                {presets.filter((s) => !isPlaybook(s)).map(renderPreset)}
+              </div>
+            </details>
+          )}
         </Panel>
 
         <Panel title={isRTL ? "موتور بک‌تست و سیاست سیگنال" : "Backtest engine & signal policy"}>

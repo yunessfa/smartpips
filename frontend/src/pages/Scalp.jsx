@@ -1067,6 +1067,8 @@ function PlaybookCard({ ai, timeframe }) {
     <div className="rounded-lg border border-up/25 bg-up/[0.05] p-3 text-xs leading-relaxed text-mist-300 space-y-2">
       {exit && <p>⏱ {fill(t("pb_exit_line"), { r: `${exit.target_r}R`, bars: exit.max_hold_bars,
         hours: Math.round(exit.max_hold_minutes / 60) })}</p>}
+      {exit?.breakeven && <p>🛡 <span>{fill(t("pb_breakeven"), { trigger: exit.breakeven.trigger_price,
+        stop: exit.breakeven.stop_price })}</span></p>}
       {ev && (
         <div className="grid grid-cols-3 gap-2">
           <EvidenceCell ltr label={t("bt_ev_years_pos")} value={ev.positive_years} tone="up" />

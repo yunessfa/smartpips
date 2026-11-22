@@ -2,7 +2,7 @@ from io import StringIO
 from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from apps.strategy.config_models import Strategy, StrategyVersion
 from apps.strategy.test_hotfix import historical_bars
 from .models import WatchItem, Notification, UserSignalState
@@ -15,6 +15,7 @@ def decision(signal='buy', version=1):
                 strategy_version_id=version, strategy_name='Fixture', generated_at=123)
 
 
+@override_settings(ALERTS_VALIDATED_ONLY=False)  # the engine path behind the switch
 class AlertPipelineTests(TestCase):
     def setUp(self):
         self.a = User.objects.create_user('watcher-a')

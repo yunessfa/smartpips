@@ -155,7 +155,8 @@ def _playbook_decider(symbol, candles, timeframe, htf_series, version, diagnosti
                                 [{"code": "strategy_conditions", "message": verdict.get("reason") or "rules"}])
                 return None
         return {"direction": s["signal"], "entry": s["entry"], "stop": s["stop"], "target": s["target"],
-                "entry_type": "limit", "expiry_bars": tp.LIMIT_VALID_BARS, "max_hold": tp.MAX_HOLD_BARS}
+                "entry_type": "limit", "expiry_bars": tp.LIMIT_VALID_BARS, "max_hold": tp.MAX_HOLD_BARS,
+                "breakeven_r": s.get("breakeven_r"), "breakeven_lock_r": tp.BREAKEVEN_LOCK_R}
     return decide
 
 
@@ -242,6 +243,7 @@ def backtest(symbol, candles, warmup=60, max_hold=None, tick_mode=False,
         exit_index = min(fill_index + hold_limit, len(candles) - 1)
         raw_exit = candles[exit_index]["close"]
         reason = "timeout"
+        be_r, moved_to_be, best_close = decision.get("breakeven_r"), False, entry
         for j in range(fill_index, exit_index + 1):
             c = candles[j]
             stop_hit = c["low"] <= stop if long else c["high"] >= stop
@@ -253,12 +255,19 @@ def backtest(symbol, candles, warmup=60, max_hold=None, tick_mode=False,
                     raw_exit = stop
                 else:
                     raw_exit = min(stop, c["open"]) if long else max(stop, c["open"])
-                exit_index, reason = j, "stop"
+                exit_index, reason = j, "breakeven" if moved_to_be else "stop"
                 break
             if tp_hit:
                 raw_exit = target
                 exit_index, reason = j, "target"
                 break
+            # Breakeven is decided on the bar CLOSE and only protects from the next bar.
+            if be_r and not moved_to_be:
+                best_close = max(best_close, c["close"]) if long else min(best_close, c["close"])
+                if (best_close - entry if long else entry - best_close) >= be_r * risk:
+                    lock = decision["breakeven_lock_r"] * risk
+                    stop = entry + lock if long else entry - lock
+                    moved_to_be = True
         exit_px = raw_exit * (1 - slip if long else 1 + slip)
         gross = exit_px - entry if long else entry - exit_px
         held_hours = (exit_index - fill_index + 1) * step / 3600

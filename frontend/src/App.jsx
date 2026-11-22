@@ -12,6 +12,7 @@ const Bitunix = lazy(() => import("./pages/Bitunix.jsx"));
 const Logs = lazy(() => import("./pages/Logs.jsx"));
 const Notifications = lazy(() => import("./pages/Notifications.jsx"));
 const Strategies = lazy(() => import("./pages/Strategies.jsx"));
+const Radar = lazy(() => import("./pages/Radar.jsx"));
 import SiteLayout from "./site/SiteLayout.jsx";
 import Landing from "./site/pages/Landing.jsx";
 import { LivePriceProvider } from "./live/LivePrices.jsx";
@@ -113,6 +114,7 @@ export default function App() {
                 <Route path="/chat" element={<Navigate to="/app/scalp" replace />} />
                 <Route path="/trades" element={<Trades />} />
                 <Route path="/scalp" element={<Scalp />} />
+                <Route path="/radar" element={<Radar />} />
                 <Route path="/bitunix" element={<Bitunix />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/logs" element={<Logs />} />

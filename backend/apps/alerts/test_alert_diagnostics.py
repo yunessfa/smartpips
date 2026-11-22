@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from .models import Notification, UserSignalState, WatchItem
@@ -12,6 +12,7 @@ from .signal_check import evaluate_and_alert
 from .test_signal_pipeline import decision
 
 
+@override_settings(ALERTS_VALIDATED_ONLY=False)
 class AlertDiagnosticsTests(TestCase):
     def setUp(self):
         self.u = User.objects.create_user('diag')

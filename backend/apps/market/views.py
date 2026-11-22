@@ -117,3 +117,14 @@ def futures_flow_view(request):
     if data["status"] != "unavailable":
         cache.set(key, data, 20)
     return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def market_radar(request):
+    """Spikes, funding, OI, sentiment and why each watched coin has or has no signal.
+
+    Display only: nothing here is read by the decision engine.
+    """
+    from . import radar
+    return Response(radar.snapshot(request.user))

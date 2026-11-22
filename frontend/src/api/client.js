@@ -144,6 +144,8 @@ export const marketApi = {
   metal: (symbol) => api.get(`/market/metal/?symbol=${encodeURIComponent(symbol)}`),
   // real futures order flow (taker delta, OI, funding, book) — display only
   flow: (symbol, timeframe = "5m") => api.get(`/market/flow/?symbol=${encodeURIComponent(symbol)}&timeframe=${encodeURIComponent(timeframe)}`),
+  // spikes, funding, OI, sentiment and per-coin playbook state — display only
+  radar: () => api.get("/market/radar/"),
 };
 
 export const alertsApi = {
