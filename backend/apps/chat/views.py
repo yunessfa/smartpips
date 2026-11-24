@@ -206,8 +206,8 @@ def scalp_signal(request):
     if timeframe not in ("1m", "5m", "15m", "1h", "4h"):
         return Response({"error": "Unsupported timeframe."}, status=400)
     mode = str(request.data.get("mode") or "safe").lower()
-    if mode not in ("safe", "aggressive", "trend"):
-        return Response({"error": "mode must be safe, aggressive or trend."}, status=400)
+    if mode not in ("safe", "aggressive", "trend", "price"):
+        return Response({"error": "mode must be safe, aggressive, trend or price."}, status=400)
 
     # The central Decision Engine runs the WHOLE pipeline (data -> structure ->
     # liquidity -> order-flow -> session -> score -> news guard -> risk sizing).

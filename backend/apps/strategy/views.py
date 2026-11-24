@@ -33,7 +33,8 @@ def backtest_view(request):
     result["timeframe"] = timeframe
     result["data_quality"] = "candles"
     result["strategy"] = (strategy.name if strategy
-                          else "Trend pullback playbook" if result.get("mode") == "trend" else "Base engine")
+                          else "Trend pullback playbook" if result.get("mode") == "trend"
+                          else "Price-action pullback playbook" if result.get("mode") == "price" else "Base engine")
     result["strategy_id"] = strategy.pk if strategy else None
     result["strategy_version_id"] = version.pk if version else None
     return Response(result)

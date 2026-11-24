@@ -38,10 +38,12 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
         from .config_models import Strategy
         strategy = Strategy.objects.filter(user=user, is_active=True, archived=False).first()
         version = strategy.current_version() if strategy else None
-    playbook = mode == "trend" or bool(
+    explicit_playbook = mode in ("trend", "price")
+    playbook = explicit_playbook or bool(
         version and (version.risk or {}).get("signal_source") == "playbook")
-    engine_mode = "safe" if mode == "trend" else mode
+    engine_mode = "safe" if explicit_playbook else mode
     from . import trend_pullback
+    variant = trend_pullback.variant_for(mode, version if not explicit_playbook else None)
     # The market brief (scalp page) needs the same converged EMAs and 4h/1h
     # trend as the playbook, whatever engine mode was selected.
     long_view = playbook or brief
@@ -128,7 +130,7 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
                             mode=engine_mode)
     if playbook and data_quality == "candles":
         trend_pullback.apply(decision, symbol, timeframe, tf_candles,
-                             {k: htf_map.get(k) or [] for k in ("4h", "1h")})
+                             {k: htf_map.get(k) or [] for k in ("4h", "1h")}, variant=variant)
         if stale_htf and decision.get("signal") in ("buy", "sell"):
             decision.update(signal="wait", confidence="low", entry=None, stop_loss=None, take_profit=None,
                             entry_plan=None, reason="Trend pullback: higher-timeframe feed is stale.",
@@ -146,7 +148,7 @@ def decide(symbol, timeframe="5m", user=None, tick_series=None, live_price=None,
     # Apply the selected configuration to the SAME plan used by alerts and chat.
     # An explicit "trend" request is the playbook alone; a playbook STRATEGY
     # keeps its own rules as extra vetoes (selection.apply_strategy).
-    if strategy is not None and not (mode == "trend" and not (
+    if strategy is not None and not (explicit_playbook and not (
             version and (version.risk or {}).get("signal_source") == "playbook")):
         from .selection import apply_strategy
         apply_strategy(decision, strategy, version, symbol, timeframe, candles=tf_candles[-300:])

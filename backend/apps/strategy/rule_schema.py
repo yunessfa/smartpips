@@ -113,7 +113,7 @@ SL_METHODS = ["atr", "structure", "fixed_pct"]
 #   strategy      — the strategy's own rules pick the direction; the engine still
 #                   provides readings, data-quality/news/risk gates and the scalp plan
 SIGNAL_SOURCES = ["engine_filter", "strategy", "playbook"]
-PLAYBOOKS = ["trend_pullback"]
+PLAYBOOKS = ["trend_pullback", "price_pullback"]
 
 
 class RuleError(ValueError):

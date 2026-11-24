@@ -237,7 +237,7 @@ def _load_tape(bases):
 WAIT_PATTERNS = (
     ("no_trend", r"4h has no clear trend"),
     ("h1_conflict", r"1h trend does not agree"),
-    ("not_stacked", r"EMAs .* not stacked"),
+    ("not_stacked", r"not stacked"),
     ("no_push", r"price is only"),
     ("stop_too_small", r"stop is .* below"),
     ("stale", r"stale"),

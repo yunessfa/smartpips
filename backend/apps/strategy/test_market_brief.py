@@ -80,3 +80,23 @@ class OverviewEndpointTests(TestCase):
         self.assertIsNone(rows["ETHUSDT:PERP"].get("brief"))
         self.assertEqual(rows["FOOUSDT:PERP"]["error"], "unsupported")
         self.assertEqual(self.api.get("/api/strategy/overview/?tf=1m").status_code, 400)
+
+
+
+
+class PriceVariantBriefTests(SimpleTestCase):
+    def test_price_variant_brief_has_no_ema_facts(self):
+        from . import trend_pullback as tp
+        h1 = series(700, 3600, drift=0.003, rng=0.006)
+        d = tp.apply({}, "BTCUSDT", "1h", h1, {"4h": []}, variant="price")
+        brief = market_brief.build(d, "BTCUSDT", "1h", h1, {"4h": []})
+        keys = [f["key"] for f in brief["facts"]]
+        self.assertIn("range_stack", keys)
+        self.assertIn("stretch_range", keys)
+        self.assertNotIn("ema_stack", keys)
+        self.assertEqual((brief["variant"], brief["anchor"]), ("price", "mid20"))
+        ind = tp.indicators(h1)
+        self.assertAlmostEqual(brief["pullback_level"], ind["mid20"][-1], delta=ind["mid20"][-1] * 1e-3)
+        other = market_brief.build({"playbook": {"variant": "price"}}, "BTCUSDT", "15m", h1, {"4h": []})
+        self.assertFalse(other["validated_timeframe"])
+        self.assertTrue(market_brief.lines(brief, d))

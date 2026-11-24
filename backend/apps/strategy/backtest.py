@@ -122,7 +122,7 @@ def _decide_at(symbol, candles_so_far, timeframe="5m", version=None, mode="safe"
             "expiry_bars": int(plan.get("expiry_bars") or 0)}
 
 
-def _playbook_decider(symbol, candles, timeframe, htf_series, version, diagnostics):
+def _playbook_decider(symbol, candles, timeframe, htf_series, version, diagnostics, variant="trend"):
     """Per-bar decisions from the validated playbook (same code as live)."""
     from . import trend_pullback as tp
     htf = dict(htf_series or {})
@@ -131,7 +131,7 @@ def _playbook_decider(symbol, candles, timeframe, htf_series, version, diagnosti
         if not htf.get(label) and TF_SECONDS[label] > step:
             factor = TF_SECONDS[label] // step
             htf[label] = _resample(candles, factor, step)
-    at = tp.series_decider(candles, timeframe, htf, symbol)
+    at = tp.series_decider(candles, timeframe, htf, symbol, variant)
     rules_version = version if (version and version.rules) else None
 
     def decide(i):
@@ -172,7 +172,7 @@ def _decide_snapshot(symbol, prefix, timeframe, htf_series):
 
 
 def uses_playbook(mode=None, version=None):
-    if mode == "trend":
+    if mode in ("trend", "price"):
         return True
     risk = getattr(version, "risk", None) or {}
     return risk.get("signal_source") == "playbook"
@@ -195,7 +195,9 @@ def backtest(symbol, candles, warmup=60, max_hold=None, tick_mode=False,
     i = max(warmup, 59)
     if playbook:
         from .trend_pullback import MIN_BARS
-        decide_playbook = _playbook_decider(symbol, candles, timeframe, htf_series, version, diagnostics)
+        from .trend_pullback import variant_for
+        decide_playbook = _playbook_decider(symbol, candles, timeframe, htf_series, version, diagnostics,
+                                            variant_for(mode, version))
         i = max(i, MIN_BARS - 1)
     slip = slippage_bps / 10000
     step = TF_SECONDS[timeframe]
@@ -285,7 +287,8 @@ def backtest(symbol, candles, warmup=60, max_hold=None, tick_mode=False,
     result = {"trades": len(trades), "fees_deducted": True, "fee_rate_per_side": fee_rate,
               "maker_fee_rate": maker_fee_rate, "funding_rate_8h": funding_rate_8h,
               "diagnostics": diagnostics, "signal_source": "playbook" if playbook else "engine",
-              "playbook": "trend_pullback" if playbook else None,
+              "playbook": (("price_pullback" if mode == "price" or (getattr(version, "risk", None) or {}).get("playbook") == "price_pullback"
+                            else "trend_pullback") if playbook else None),
               "slippage_bps_per_side": slippage_bps, "trade_list": trades,
               "limitations": ["No historical news guard, spread or order-book replay",
                               "Single target/fixed stop; no partial TP or trailing stop",

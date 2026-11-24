@@ -45,7 +45,9 @@ const METALS = [
     symbol: `${b}USDT:PERP`, tv: `BINANCE:${b}USDT.P`, label: `${b} futures`, group: "futures",
   })),
 ];
-const VALIDATED_TFS = ["5m", "15m", "1h"];
+// Validated playbook modes and the timeframes each one was tested on.
+const PLAYBOOK_TFS = { trend: ["5m", "15m", "1h"], price: ["1h"] };
+const isPlaybookMode = (m) => Boolean(PLAYBOOK_TFS[m]);
 
 // label shown to user -> TradingView interval code
 const TIMEFRAMES = [
@@ -503,10 +505,10 @@ export default function Scalp() {
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1 rounded-lg bg-ink-800 p-0.5" role="group" aria-label={t("timeframe")}>
                 {TIMEFRAMES.map((f) => {
-                  const ok = scalpMode !== "trend" || VALIDATED_TFS.includes(f[0]);
+                  const ok = !isPlaybookMode(scalpMode) || PLAYBOOK_TFS[scalpMode].includes(f[0]);
                   return (
                     <button key={f[0]} onClick={() => switchTf(f)}
-                      title={ok ? undefined : t("pb_tf_hint")}
+                      title={ok ? undefined : t(scalpMode === "price" ? "pb_tf_hint_price" : "pb_tf_hint")}
                       className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition ${
                         f[0] === tf[0] ? "bg-gold text-ink-900" : ok ? "text-mist-300 hover:bg-ink-600" : "text-mist-600 hover:bg-ink-600"
                       }`}>{f[0]}</button>
@@ -514,10 +516,11 @@ export default function Scalp() {
                 })}
               </div>
               <div className="flex items-center gap-1 rounded-lg bg-ink-800 p-0.5" role="group" aria-label={t("mode_label")}>
-                {[["trend", `✓ ${t("mode_trend")}`], ["safe", t("mode_safe_legacy")], ["aggressive", t("mode_aggressive_legacy")]].map(([m, label]) => (
-                  <button key={m} onClick={() => switchMode(m)} title={m === "trend" ? t("mode_trend_hint") : t("mode_legacy_hint")}
+                {[["trend", `✓ ${t("mode_trend")}`], ["price", `✓ ${t("mode_price")}`], ["safe", t("mode_safe_legacy")], ["aggressive", t("mode_aggressive_legacy")]].map(([m, label]) => (
+                  <button key={m} onClick={() => switchMode(m)}
+                    title={m === "trend" ? t("mode_trend_hint") : m === "price" ? t("mode_price_hint") : t("mode_legacy_hint")}
                     className={`text-xs px-2.5 py-1.5 rounded-md ${scalpMode === m
-                      ? (m === "trend" ? "bg-up/20 text-up" : "bg-ink-600 text-mist-100")
+                      ? (isPlaybookMode(m) ? "bg-up/20 text-up" : "bg-ink-600 text-mist-100")
                       : "text-mist-500 hover:text-mist-300"}`}>
                     {label}
                   </button>
@@ -537,10 +540,11 @@ export default function Scalp() {
             </button>
             <div className="ms-auto"><RiskBar balance={balance} riskPct={riskPct} onSave={saveRisk} source={balanceSource} /></div>
           </div>
-          {scalpMode === "trend" && !VALIDATED_TFS.includes(tf[0]) && (
-            <p className="text-xs text-gold-soft">{t("pb_tf_hint")}</p>
+          {isPlaybookMode(scalpMode) && !PLAYBOOK_TFS[scalpMode].includes(tf[0]) && (
+            <p className="text-xs text-gold-soft">{t(scalpMode === "price" ? "pb_tf_hint_price" : "pb_tf_hint")}</p>
           )}
-          {scalpMode !== "trend" && <p className="text-xs text-gold-soft">{t("mode_legacy_warning")}</p>}
+          {scalpMode === "price" && <p className="text-xs text-mist-500">{t("mode_price_hint")}</p>}
+          {!isPlaybookMode(scalpMode) && <p className="text-xs text-gold-soft">{t("mode_legacy_warning")}</p>}
         </section>
 
         {aiError && (

@@ -20,14 +20,14 @@ from . import trend_pullback as tp
 
 WAIT_FA = {
     # playbook
-    "htf_no_trend": "روند ۴ساعته مشخص نیست (قیمت/EMA50 نسبت به EMA200 هم‌جهت نیستند)",
+    "htf_no_trend": "روند ۴ساعته مشخص نیست (قیمت درست وسط محدودهٔ ۵۰ کندل اخیر است)",
     "htf_unavailable": "داده تایم‌فریم ۴ساعته یا ۱ساعته در دسترس نیست",
     "h1_conflict": "روند ۱ساعته با روند ۴ساعته هم‌جهت نیست",
-    "local_trend_conflict": "EMAهای این تایم‌فریم (۲۱/۵۰/۲۰۰) با روند بالاتر هم‌ردیف نیستند",
-    "no_pullback_setup": "قیمت هنوز به‌اندازه کافی از EMA21 فاصله نگرفته؛ ستاپ پولبک فعال نیست",
+    "local_trend_conflict": "روند کوتاه‌مدت این تایم‌فریم با روند ۴ساعته هم‌جهت نیست",
+    "no_pullback_setup": "قیمت هنوز به‌اندازه کافی از سطح پولبک فاصله نگرفته؛ ستاپ فعال نیست",
     "stop_below_cost_floor": "نوسان کم است؛ حد ضرر ۱٫۵ ATR کمتر از ۰٫۴٪ می‌شود و کارمزد سود را می‌خورد",
-    "insufficient_history": "تاریخچه کافی برای محاسبه EMA200 نیست",
-    "playbook_timeframe": "این تایم‌فریم برای پلی‌بوک تأیید نشده (فقط ۵ دقیقه، ۱۵ دقیقه و ۱ ساعته)",
+    "insufficient_history": "تاریخچهٔ کافی برای محاسبه نیست",
+    "playbook_timeframe": "این تایم‌فریم برای این پلی‌بوک تأیید نشده",
     "playbook_market": "پلی‌بوک فقط روی کریپتو تأیید شده است",
     "stale_htf": "داده تایم‌فریم بالاتر قدیمی است",
     # legacy engine
@@ -65,9 +65,13 @@ def _round(x, ref):
 def build(decision, symbol, timeframe, tf_candles, htf_candles):
     """Return the brief dict (also stored at decision['brief'])."""
     step = tp.TF_SECONDS.get(timeframe, 300)
-    brief = {"version": 1, "timeframe": timeframe, "status": decision.get("signal") or "wait",
+    variant = (decision.get("playbook") or {}).get("variant") or "trend"
+    price = variant == "price"
+    brief = {"version": 2, "timeframe": timeframe, "status": decision.get("signal") or "wait",
              "source": "playbook" if decision.get("signal_source") == "playbook" else "engine",
-             "validated_timeframe": timeframe in tp.TIMEFRAMES, "facts": [], "next": None}
+             "variant": variant, "anchor": "mid20" if price else "ema21",
+             "validated_timeframe": timeframe in (tp.PRICE_TIMEFRAMES if price else tp.TIMEFRAMES),
+             "facts": [], "next": None}
     if not tf_candles:
         brief["next"] = {"code": "no_data"}
         return _finish(brief)
@@ -90,22 +94,29 @@ def build(decision, symbol, timeframe, tf_candles, htf_candles):
         h1_view = tp.HTFView((htf_candles or {}).get("1h") or [], tp.TF_SECONDS["1h"])
         h1, _ = tp._htf_trend(h1_view, close_time, "1h") if close_time else (None, "missing")
         agrees = h1 is not None and h4 not in (0, None) and h1 == h4
-        facts.append({"key": "h1_trend", "value": h1, "state": "ok" if agrees else "neutral" if h1 in (0, None) else "bad",
-                      "validated": True})
+        # Context only since v2: 1h agreement is no longer a playbook condition.
+        facts.append({"key": "h1_trend", "value": h1, "state": "ok" if agrees else "neutral",
+                      "validated": False})
     enough = i + 1 >= tp.MIN_BARS
-    stack = (1 if e21 > e50 > e200 else -1 if e21 < e50 < e200 else 0) if enough else None
+    if price:
+        fast, slow = ind["mid20"][i], ind["mid100"][i]
+        stack = (1 if fast > slow else -1 if fast < slow else 0) if fast is not None and slow is not None else None
+        anchor = fast if fast is not None else close
+    else:
+        stack = (1 if e21 > e50 > e200 else -1 if e21 < e50 < e200 else 0) if enough else None
+        anchor = e21
     want = h4 if h4 in (1, -1) else 0
-    facts.append({"key": "ema_stack", "value": stack,
+    facts.append({"key": "range_stack" if price else "ema_stack", "value": stack,
                   "state": "ok" if want and stack == want else "neutral" if stack in (0, None) or not want else "bad",
                   "validated": True})
-    stretch = (close - e21) / a if a else 0.0
-    facts.append({"key": "stretch", "value": round(stretch, 2), "need": tp.STRETCH_ATR,
+    stretch = (close - anchor) / a if a else 0.0
+    facts.append({"key": "stretch_range" if price else "stretch", "value": round(stretch, 2), "need": tp.STRETCH_ATR,
                   "state": "ok" if want and stretch * want > tp.STRETCH_ATR else "neutral", "validated": True})
     stop_pct = tp.STOP_ATR * a / close * 100 if close else 0.0
     facts.append({"key": "volatility", "value": round(stop_pct, 3), "need": tp.MIN_STOP_PCT,
                   "state": "ok" if stop_pct >= tp.MIN_STOP_PCT else "bad", "validated": True})
 
-    brief["pullback_level"] = _round(e21, close)
+    brief["pullback_level"] = _round(anchor, close)
     brief["atr"] = _round(a, close)
     brief["price"] = _round(close, close)
     brief["support"] = _round(decision.get("support"), close)
@@ -118,19 +129,19 @@ def build(decision, symbol, timeframe, tf_candles, htf_candles):
                          "price": decision.get("entry"), "valid_bars": plan.get("valid_for_bars"),
                          "valid_minutes": plan.get("valid_for_minutes")}
     elif not brief["validated_timeframe"]:
-        brief["next"] = {"code": "tf_not_validated"}
+        brief["next"] = {"code": "tf_not_validated", "variant": variant}
     elif h4 in (0, None):
         brief["next"] = {"code": "wait_trend"}
     elif h1 is not None and h1 != h4:
         brief["next"] = {"code": "wait_h1", "dir": h4}
     elif stack != h4:
-        brief["next"] = {"code": "wait_stack", "dir": h4}
+        brief["next"] = {"code": "wait_range_stack" if price else "wait_stack", "dir": h4}
     elif stop_pct < tp.MIN_STOP_PCT:
         brief["next"] = {"code": "wait_volatility", "need_pct": tp.MIN_STOP_PCT, "now_pct": round(stop_pct, 2)}
     elif stretch * h4 <= tp.STRETCH_ATR:
-        trigger = e21 + h4 * tp.STRETCH_ATR * a
+        trigger = anchor + h4 * tp.STRETCH_ATR * a
         brief["next"] = {"code": "wait_stretch", "dir": h4, "trigger": _round(trigger, close),
-                         "limit": _round(e21, close)}
+                         "limit": _round(anchor, close), "anchor": brief["anchor"]}
     else:
         brief["next"] = {"code": "blocked", "reasons": [w.get("code") for w in (decision.get("wait_reasons") or [])][:3]}
     if decision.get("risk_block"):
@@ -170,8 +181,12 @@ def lines(brief, decision):
         elif k == "ema_stack":
             word = {1: "صعودی مرتب", -1: "نزولی مرتب", 0: "نامرتب", None: "نامشخص"}[f["value"]]
             out.append(f"{mark} چیدمان EMA21/50/200 در {tf}: {word}")
-        elif k == "stretch":
-            out.append(f"{mark} فاصله قیمت از EMA21: {abs(f['value']):.1f} ATR (برای ستاپ بیش از {f['need']:g})")
+        elif k == "range_stack":
+            word = {1: "صعودی", -1: "نزولی", 0: "نامرتب", None: "نامشخص"}[f["value"]]
+            out.append(f"{mark} وسط محدودهٔ ۲۰ کندل نسبت به ۱۰۰ کندل در {tf}: {word}")
+        elif k in ("stretch", "stretch_range"):
+            where = "وسط محدودهٔ ۲۰ کندل" if k == "stretch_range" else "EMA21"
+            out.append(f"{mark} فاصله قیمت از {where}: {abs(f['value']):.1f} ATR (برای ستاپ بیش از {f['need']:g})")
         elif k == "volatility":
             out.append(f"{mark} اندازه حد ضرر ۱٫۵ ATR: {f['value']:.2f}٪ (حداقل {f['need']:g}٪)")
     nxt = brief.get("next") or {}
@@ -183,17 +198,21 @@ def lines(brief, decision):
         out.append(f"→ سیگنال فعال با ورود {_num(nxt.get('price'))}.")
     elif code == "wait_stretch":
         out.append(f"→ قدم بعد: اگر کندلی {'بالای' if nxt['dir'] == 1 else 'زیر'} {_num(nxt.get('trigger'))} بسته شود، "
-                   f"لیمیت {side(nxt['dir'])} روی حدود {_num(nxt.get('limit'))} (EMA21) فعال می‌شود.")
+                   f"لیمیت {side(nxt['dir'])} روی حدود {_num(nxt.get('limit'))} "
+                   f"({'وسط محدودهٔ ۲۰ کندل' if nxt.get('anchor') == 'mid20' else 'EMA21'}) فعال می‌شود.")
     elif code == "wait_volatility":
         out.append(f"→ قدم بعد: منتظر نوسان بیشتر (الان {nxt['now_pct']}٪، لازم {nxt['need_pct']}٪). معامله در این حالت فقط کارمزد می‌دهد.")
     elif code == "wait_trend":
         out.append("→ قدم بعد: تا وقتی روند ۴ساعته روشن نشده، معامله‌ای نیست.")
     elif code == "wait_h1":
         out.append("→ قدم بعد: منتظر هم‌جهت شدن روند ۱ساعته با ۴ساعته.")
+    elif code == "wait_range_stack":
+        out.append(f"→ قدم بعد: منتظر هم‌جهت شدن وسط محدودهٔ ۲۰ و ۱۰۰ کندل {tf} در جهت {side(nxt['dir'])}.")
     elif code == "wait_stack":
         out.append(f"→ قدم بعد: منتظر مرتب شدن EMAهای {tf} در جهت {side(nxt['dir'])}.")
     elif code == "tf_not_validated":
-        out.append("→ این تایم‌فریم تأییدشده نیست؛ ۵ دقیقه، ۱۵ دقیقه یا ۱ ساعته را انتخاب کنید.")
+        out.append("→ این تایم‌فریم برای این حالت تأییدشده نیست؛ "
+                   + ("۱ ساعته را انتخاب کنید." if brief.get("variant") == "price" else "۵ دقیقه، ۱۵ دقیقه یا ۱ ساعته را انتخاب کنید."))
     elif code == "blocked":
         reasons = [WAIT_FA.get(c, c) for c in nxt.get("reasons") or []]
         if reasons:

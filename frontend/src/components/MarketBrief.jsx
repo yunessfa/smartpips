@@ -92,7 +92,8 @@ export default function MarketBrief({ ai, unchanged }) {
 
       {!isTrade && brief && (
         <div className="mt-3 flex flex-wrap gap-2 text-[12px]">
-          {brief.pullback_level && <LevelChip label={t("mb_lvl_pullback")} value={brief.pullback_level} tone="gold" />}
+          {brief.pullback_level && <LevelChip label={fill(t("mb_lvl_pullback"), { anchor: t(brief.anchor === "mid20" ? "mb_anchor_mid20" : "mb_anchor_ema21") })}
+            value={brief.pullback_level} tone="gold" />}
           {brief.support && <LevelChip label={t("mb_lvl_support")} value={brief.support} tone="up" />}
           {brief.resistance && <LevelChip label={t("mb_lvl_resistance")} value={brief.resistance} tone="down" />}
         </div>
@@ -115,8 +116,8 @@ function FactValue({ f }) {
   if (f.key === "h4_trend" || f.key === "h1_trend") {
     return t(f.value === 1 ? "mb_up" : f.value === -1 ? "mb_down" : "mb_flat");
   }
-  if (f.key === "ema_stack") return t(f.value === 1 ? "mb_stack_up" : f.value === -1 ? "mb_stack_down" : "mb_stack_mixed");
-  if (f.key === "stretch") return <bdi dir="ltr">{Math.abs(f.value).toFixed(1)} / {f.need} ATR</bdi>;
+  if (f.key === "ema_stack" || f.key === "range_stack") return t(f.value === 1 ? "mb_stack_up" : f.value === -1 ? "mb_stack_down" : "mb_stack_mixed");
+  if (f.key === "stretch" || f.key === "stretch_range") return <bdi dir="ltr">{Math.abs(f.value).toFixed(1)} / {f.need} ATR</bdi>;
   if (f.key === "volatility") return <bdi dir="ltr">{Number(f.value).toFixed(2)}% / ≥{f.need}%</bdi>;
   return String(f.value);
 }
@@ -138,12 +139,14 @@ export function NextStep({ next, tf, compact = false }) {
       min: next.valid_minutes ?? "—" }),
     signal_active: () => fill(t("mb_next_signal_active"), { price: fmtPrice(next.price) }),
     wait_stretch: () => fill(t(next.dir === 1 ? "mb_next_stretch_up" : "mb_next_stretch_down"),
-      { trigger: fmtPrice(next.trigger), limit: fmtPrice(next.limit), side: side(next.dir) }),
+      { trigger: fmtPrice(next.trigger), limit: fmtPrice(next.limit), side: side(next.dir),
+        anchor: t(next.anchor === "mid20" ? "mb_anchor_mid20" : "mb_anchor_ema21") }),
     wait_volatility: () => fill(t("mb_next_volatility"), { now: `${next.now_pct}%`, need: `${next.need_pct}%` }),
     wait_trend: () => t("mb_next_trend"),
     wait_h1: () => t("mb_next_h1"),
     wait_stack: () => fill(t("mb_next_stack"), { side: side(next.dir), tf }),
-    tf_not_validated: () => t("mb_next_tf"),
+    wait_range_stack: () => fill(t("mb_next_range_stack"), { side: side(next.dir), tf }),
+    tf_not_validated: () => t(next.variant === "price" ? "mb_next_tf_price" : "mb_next_tf"),
     blocked: () => t("mb_next_blocked"),
     no_data: () => t("mb_next_no_data"),
   };

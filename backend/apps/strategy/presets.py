@@ -273,13 +273,28 @@ PRESETS.append({
 # validated rules, not from the confluence score.
 PRESETS.append({
     "key": "trend_pullback", "name": "Trend Pullback (validated)",
-    "description": ("4h trend + stacked EMAs; after a >1 ATR push, a LIMIT waits at EMA21; stop 1.5 ATR "
-                    "(min 0.4%), one target (3R on 1h, 2.5R on 5m/15m); on 1h the stop moves to breakeven at +1R. "
-                    "Positive after costs on BTC 2019-2026 and on 12 coins 2021-2026; 1h is the most robust."),
+    "description": ("4h trend from price (close vs the middle of its 50-bar range) + stacked EMAs; after a >1 ATR "
+                    "push, a LIMIT waits at EMA21; stop 1.5 ATR (min 0.4%), one target (3R on 1h, 2.5R on 5m/15m); "
+                    "on 1h the stop moves to breakeven at +1R. Positive after costs on 12 coins 2021-2026."),
     "market": "crypto", "timeframes": ["1h", "15m", "5m"], "direction": "both",
     "min_confidence": 0, "weights": {}, "rules": [],
     "risk": {"risk_per_trade_pct": 0.5, "max_leverage": 5, "max_open_positions": 2,
              "min_rr": 2.0, "signal_source": "playbook", "playbook": "trend_pullback",
+             "tp_method": "fixed_rr", "sl_method": "atr"},
+})
+
+# No moving averages at all: trend and pullback level come from price ranges.
+# Validated on 1h only (see trend_pullback.PRICE_RESEARCH).
+PRESETS.append({
+    "key": "price_pullback", "name": "Price-Action Pullback (validated, 1h)",
+    "description": ("No moving averages. 4h trend = close vs the middle of its 50-bar range; 1h trend = 20-bar range "
+                    "middle vs 100-bar range middle; after a >1 ATR push, a LIMIT waits at the 20-bar middle; stop "
+                    "1.5 ATR (min 0.4%), target 3R. Positive after costs on 12 coins 2021-2026, ~22% less per trade "
+                    "than the default playbook."),
+    "market": "crypto", "timeframes": ["1h"], "direction": "both",
+    "min_confidence": 0, "weights": {}, "rules": [],
+    "risk": {"risk_per_trade_pct": 0.5, "max_leverage": 5, "max_open_positions": 2,
+             "min_rr": 2.0, "signal_source": "playbook", "playbook": "price_pullback",
              "tp_method": "fixed_rr", "sl_method": "atr"},
 })
 

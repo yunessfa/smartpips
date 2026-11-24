@@ -184,7 +184,7 @@ def historical_window(symbol, timeframe, minimum=62, with_diagnostics=False, bar
     }
     return (ordered, diagnostics) if with_diagnostics else ordered
 
-BACKTEST_MODES = ("safe", "aggressive", "trend")
+BACKTEST_MODES = ("safe", "aggressive", "trend", "price")
 
 
 def run_backtest_request(src, symbol, timeframe, version, runner, **extra):
@@ -194,9 +194,10 @@ def run_backtest_request(src, symbol, timeframe, version, runner, **extra):
     from .decision import HTF
     mode = str((src or {}).get("mode") or "safe").lower()
     if mode not in BACKTEST_MODES:
-        raise ValidationError({"error": "mode must be safe, aggressive or trend.", "code": "invalid_mode"})
+        raise ValidationError({"error": "mode must be safe, aggressive, trend or price.", "code": "invalid_mode"})
     if uses_playbook(None, version):
-        mode = "trend"
+        from .trend_pullback import variant_for
+        mode = variant_for(None, version)
     bars = requested_bars(src, timeframe)
     candles, data_info = historical_window(symbol, timeframe, with_diagnostics=True, bars=bars)
     labels = set(HTF.get(timeframe, [])) | {"4h", "1h"}
@@ -209,9 +210,10 @@ def run_backtest_request(src, symbol, timeframe, version, runner, **extra):
     result["mode"] = mode
     if uses_playbook(mode, version):
         from . import trend_pullback
+        price = mode == "price"
+        research = trend_pullback.research_for("price" if price else "trend")
         result["research_evidence"] = {
-            "summary": trend_pullback.RESEARCH["results"].get(timeframe),
-            "data": trend_pullback.RESEARCH["data"], "costs": trend_pullback.RESEARCH["costs"],
-            "caveats": trend_pullback.RESEARCH["caveats"],
-            "validated_timeframes": list(trend_pullback.TIMEFRAMES)}
+            "summary": research["results"].get(timeframe),
+            "data": research["data"], "costs": research["costs"], "caveats": research["caveats"],
+            "validated_timeframes": list(trend_pullback.PRICE_TIMEFRAMES if price else trend_pullback.TIMEFRAMES)}
     return result

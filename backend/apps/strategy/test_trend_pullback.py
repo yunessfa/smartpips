@@ -97,16 +97,51 @@ class PlaybookDecisionTests(SimpleTestCase):
         self.assertEqual(d["signal"], "wait")
         self.assertIn("htf_unavailable", [w["code"] for w in d["wait_reasons"]])
 
-    def test_short_timeframes_need_1h_agreement_and_1m_is_not_supported(self):
+    def test_short_timeframes_no_longer_need_1h_agreement_and_1m_is_not_supported(self):
         m15 = series(700, 900, drift=0.002, rng=0.005)
         end = m15[-1]["time"] + 900
         h4 = series(400, 14400, drift=0.006, rng=0.01, t0=end - 400 * 14400)
         h1_down = series(400, 3600, drift=-0.003, rng=0.006, t0=end - 400 * 3600)
         d = tp.apply({}, "BTCUSDT", "15m", m15, {"4h": h4, "1h": h1_down})
-        self.assertEqual(d["signal"], "wait")
-        self.assertIn("h1_conflict", [w["code"] for w in d["wait_reasons"]])
+        self.assertNotIn("h1_conflict", [w["code"] for w in d.get("wait_reasons") or []])
+        self.assertEqual(d["signal"], "buy", d.get("wait_reasons"))
         d = tp.apply({}, "BTCUSDT", "1m", m15, {"4h": h4})
         self.assertIn("playbook_timeframe", [w["code"] for w in d["wait_reasons"]])
+
+    def test_4h_trend_comes_from_price_range_not_emas(self):
+        # 4h fell for a long time (EMAs still bearish) but the last bars rallied
+        # above the middle of the 50-bar range: the price trend is already up.
+        end = self.h1[-1]["time"] + 3600
+        h4 = series(380, 14400, drift=-0.004, rng=0.01, t0=end - 400 * 14400)
+        h4 += series(20, 14400, start=h4[-1]["close"], drift=0.03, rng=0.01, t0=h4[-1]["time"] + 14400)
+        ind = tp.indicators(h4)
+        self.assertLess(ind["e50"][-1], ind["e200"][-1])            # the old EMA rule would say "down"
+        trend, state = tp._htf_trend(tp.HTFView(h4, 14400), end, "4h")
+        self.assertEqual((trend, state), (1, "ok"))
+
+    def test_price_variant_uses_no_moving_average(self):
+        d = tp.apply({}, "BTCUSDT:PERP", "1h", self.h1, {"4h": self.h4}, variant="price")
+        self.assertEqual(d["signal"], "buy", d.get("wait_reasons"))
+        ind = tp.indicators(self.h1)
+        self.assertAlmostEqual(d["entry_plan"]["price"], ind["mid20"][-1], delta=ind["mid20"][-1] * 1e-6)
+        self.assertEqual(d["playbook"]["name"], tp.PRICE_NAME)
+        self.assertIsNone(d["exit_plan"]["breakeven"])               # breakeven hurt this variant
+        self.assertEqual(d["playbook"]["evidence"], tp.PRICE_RESEARCH["results"]["1h"])
+
+    def test_price_variant_is_1h_only(self):
+        m15 = series(700, 900, drift=0.002, rng=0.005)
+        end = m15[-1]["time"] + 900
+        h4 = series(400, 14400, drift=0.006, rng=0.01, t0=end - 400 * 14400)
+        d = tp.apply({}, "BTCUSDT", "15m", m15, {"4h": h4}, variant="price")
+        self.assertIn("playbook_timeframe", [w["code"] for w in d["wait_reasons"]])
+
+    def test_range_middle_matches_brute_force(self):
+        rows = series(300, 3600, drift=0.001, rng=0.02)
+        highs, lows = [r["high"] for r in rows], [r["low"] for r in rows]
+        mids = tp.range_mid_series(highs, lows, 20)
+        self.assertIsNone(mids[18])
+        for i in (19, 57, 299):
+            self.assertAlmostEqual(mids[i], (max(highs[i - 19:i + 1]) + min(lows[i - 19:i + 1])) / 2)
 
     def test_metals_are_not_validated(self):
         d = tp.apply({}, "XAUUSD", "1h", self.h1, {"4h": self.h4})
@@ -128,6 +163,15 @@ class PlaybookBacktestTests(SimpleTestCase):
         self.assertIn(r["evidence"]["verdict"],
                       ("insufficient_sample", "positive_edge", "inconclusive", "negative_edge"))
         self.assertGreater(r["diagnostics"].get("limit_not_filled", 0), 0)
+
+    def test_price_mode_backtest_runs_the_price_variant(self):
+        h1 = series(1500, 3600, drift=0.003, rng=0.006, dips_every=40, dip_depth=0.06)
+        end = h1[-1]["time"] + 3600
+        h4 = series(700, 14400, drift=0.006, rng=0.01, t0=end - 700 * 14400)
+        r = backtest("BTCUSDT", h1, timeframe="1h", mode="price", htf_series={"4h": h4})
+        self.assertEqual((r["signal_source"], r["playbook"]), ("playbook", "price_pullback"))
+        self.assertGreater(r["trades"], 0)
+        self.assertNotIn("breakeven", {t["exit_reason"] for t in r["trade_list"]})
 
     def test_no_dips_means_no_fills_never_chases(self):
         h1 = series(900, 3600, drift=0.003, rng=0.006)
@@ -231,8 +275,29 @@ class LiveDecideTrendModeTests(TestCase):
         if d["signal"] == "buy":
             self.assertEqual(d["entry_plan"]["type"], "limit")
 
+    def test_price_preset_drives_the_price_variant(self):
+        from .presets import sync_presets
+        from .config_models import Strategy
+        from .decision import decide
+        sync_presets()
+        user = get_user_model().objects.create_user("pa")
+        preset = Strategy.objects.get(user=None, preset_key="price_pullback")
+        api = APIClient()
+        api.force_authenticate(user)
+        r = api.post(f"/api/strategy/strategies/{preset.pk}/activate/", {}, format="json")
+        self.assertIn(r.status_code, (200, 201), r.data)
+        with patch("apps.market.candles.fetch_candles", side_effect=self.fake), \
+             patch("apps.market.calendar_guard.high_impact_soon", return_value=(False, "")):
+            d = decide("BTCUSDT", "1h", user=user, mode="safe")
+            explicit = decide("BTCUSDT", "1h", mode="price")
+        self.assertEqual(d["playbook"]["name"], "price_pullback")
+        self.assertEqual(explicit["playbook"]["name"], "price_pullback")
+        self.assertEqual(explicit["signal_source"], "playbook")
+
     def test_rule_schema_accepts_playbook_source(self):
         from .rule_schema import validate_risk, RuleError
         self.assertEqual(validate_risk({"signal_source": "playbook"})["playbook"], "trend_pullback")
         with self.assertRaises(RuleError):
             validate_risk({"signal_source": "playbook", "playbook": "magic"})
+        self.assertEqual(validate_risk({"signal_source": "playbook", "playbook": "price_pullback"})["playbook"],
+                         "price_pullback")
